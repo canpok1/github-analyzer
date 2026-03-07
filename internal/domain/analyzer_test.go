@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-// TODO: 正常系: Analyzerインターフェースをモック実装で満たせること
-// TODO: AnalysisRequestの構造体フィールド確認
-// TODO: AnalysisResponseの構造体フィールド確認
+// DONE: 正常系: Analyzerインターフェースをモック実装で満たせること
+// DONE: AnalysisRequestの構造体フィールド確認
+// DONE: AnalysisResponseの構造体フィールド確認
 
 // mockAnalyzer はテスト用のモック実装。
 type mockAnalyzer struct{}

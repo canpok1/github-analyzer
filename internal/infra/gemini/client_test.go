@@ -3,6 +3,7 @@ package gemini
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -206,8 +207,10 @@ func TestAnalyze_EmptyResponse(t *testing.T) {
 
 func TestAnalyze_ModelOverride(t *testing.T) {
 	var receivedURL string
+	var receivedAPIKey string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		receivedURL = r.URL.String()
+		receivedAPIKey = r.Header.Get("x-goog-api-key")
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, `{"candidates":[{"content":{"parts":[{"text":"ok"}]}}]}`)
 	}))
@@ -225,13 +228,18 @@ func TestAnalyze_ModelOverride(t *testing.T) {
 	if !strings.Contains(receivedURL, "gemini-1.5-pro") {
 		t.Errorf("URL = %q, want to contain %q", receivedURL, "gemini-1.5-pro")
 	}
+	if receivedAPIKey != "test-api-key" {
+		t.Errorf("x-goog-api-key = %q, want %q", receivedAPIKey, "test-api-key")
+	}
+	if strings.Contains(receivedURL, "key=") {
+		t.Errorf("URL should not contain API key in query params: %q", receivedURL)
+	}
 }
 
 func TestAnalyze_RequestFormat(t *testing.T) {
 	var receivedBody string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body := make([]byte, r.ContentLength)
-		_, _ = r.Body.Read(body)
+		body, _ := io.ReadAll(r.Body)
 		receivedBody = string(body)
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, `{"candidates":[{"content":{"parts":[{"text":"ok"}]}}]}`)

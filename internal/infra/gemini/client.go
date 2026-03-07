@@ -7,8 +7,16 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/canpok1/github-analyzer/internal/domain"
+)
+
+const (
+	// maxResponseSize はレスポンスボディの最大読み取りサイズ（10MB）。
+	maxResponseSize = 10 * 1024 * 1024
+	// defaultTimeout はHTTPクライアントのデフォルトタイムアウト。
+	defaultTimeout = 60 * time.Second
 )
 
 const (
@@ -34,7 +42,7 @@ func NewClient(apiKey string) (*Client, error) {
 	return &Client{
 		apiKey:     apiKey,
 		model:      DefaultModel,
-		httpClient: http.DefaultClient,
+		httpClient: &http.Client{Timeout: defaultTimeout},
 		baseURL:    "https://generativelanguage.googleapis.com/v1beta",
 	}, nil
 }
@@ -66,12 +74,13 @@ func (c *Client) Analyze(ctx context.Context, req domain.AnalysisRequest) (*doma
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/models/%s:generateContent?key=%s", c.baseURL, model, c.apiKey)
+	url := fmt.Sprintf("%s/models/%s:generateContent", c.baseURL, model)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("x-goog-api-key", c.apiKey)
 
 	httpResp, err := c.httpClient.Do(httpReq)
 	if err != nil {
@@ -79,7 +88,7 @@ func (c *Client) Analyze(ctx context.Context, req domain.AnalysisRequest) (*doma
 	}
 	defer func() { _ = httpResp.Body.Close() }()
 
-	respBody, err := io.ReadAll(httpResp.Body)
+	respBody, err := io.ReadAll(io.LimitReader(httpResp.Body, maxResponseSize))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
@@ -92,7 +101,11 @@ func (c *Client) Analyze(ctx context.Context, req domain.AnalysisRequest) (*doma
 			}
 			return nil, fmt.Errorf("API error (status %d): %s", httpResp.StatusCode, errResp.Error.Message)
 		}
-		return nil, fmt.Errorf("API error (status %d): %s", httpResp.StatusCode, string(respBody))
+		bodyStr := string(respBody)
+		if len(bodyStr) > 500 {
+			bodyStr = bodyStr[:500] + "..."
+		}
+		return nil, fmt.Errorf("API error (status %d): %s", httpResp.StatusCode, bodyStr)
 	}
 
 	var geminiResp geminiResponse
