@@ -20,4 +20,3 @@ func NewClient(token string) *Client {
 	}
 	return &Client{client: client}
 }
-
