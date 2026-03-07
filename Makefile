@@ -23,4 +23,7 @@ lint:
 depcheck:
 	go vet -vettool=$$(which depcheck) ./...
 
-.PHONY: setup build clean test fmt lint depcheck
+test-e2e:
+	go test -tags=e2e ./test/e2e/...
+
+.PHONY: setup build clean test test-e2e fmt lint depcheck
