@@ -29,6 +29,20 @@ func CollectData(ctx context.Context, gh domain.GitHubRepository, query entity.Q
 		Timeline: make(map[int][]entity.TimelineEvent),
 	}
 
+	if query.Issue != nil {
+		issues, err := gh.ListIssues(ctx, owner, repo, domain.ListIssuesOptions{
+			Numbers: []int{*query.Issue},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list issues: %w", err)
+		}
+		data.Issues = issues
+
+		if err := collectIssueDetails(ctx, gh, owner, repo, *query.Issue, data); err != nil {
+			return nil, err
+		}
+	}
+
 	if query.PR != nil {
 		prs, err := gh.ListPullRequests(ctx, owner, repo, domain.ListPullRequestsOptions{})
 		if err != nil {
@@ -69,6 +83,23 @@ func collectPRDetails(ctx context.Context, gh domain.GitHubRepository, owner, re
 	timeline, err := gh.ListTimelineEvents(ctx, owner, repo, number)
 	if err != nil {
 		return fmt.Errorf("failed to list timeline events for #%d: %w", number, err)
+	}
+	data.Timeline[number] = timeline
+
+	return nil
+}
+
+// collectIssueDetails はIssueのコメントとタイムラインを収集する。
+func collectIssueDetails(ctx context.Context, gh domain.GitHubRepository, owner, repo string, number int, data *CollectedData) error {
+	comments, err := gh.ListIssueComments(ctx, owner, repo, number)
+	if err != nil {
+		return fmt.Errorf("failed to list comments for issue #%d: %w", number, err)
+	}
+	data.Comments[number] = comments
+
+	timeline, err := gh.ListTimelineEvents(ctx, owner, repo, number)
+	if err != nil {
+		return fmt.Errorf("failed to list timeline events for issue #%d: %w", number, err)
 	}
 	data.Timeline[number] = timeline
 

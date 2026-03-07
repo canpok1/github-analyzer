@@ -156,3 +156,73 @@ func TestCollectData_SinglePR(t *testing.T) {
 		t.Errorf("len(Timeline[1024]) = %d, want 1", len(timeline))
 	}
 }
+
+func TestCollectData_SingleIssue(t *testing.T) {
+	expectedIssue := entity.Issue{
+		Number: 42,
+		Title:  "Test Issue",
+		State:  entity.IssueStateOpen,
+		Author: "testuser",
+	}
+	expectedComments := []entity.Comment{
+		{ID: 10, Body: "comment on issue", Type: entity.CommentTypeIssue},
+	}
+	expectedTimeline := []entity.TimelineEvent{
+		{ID: 20, Event: "assigned", Assignee: "dev1"},
+	}
+
+	mock := &mockGitHubRepository{
+		listIssues: func(_ context.Context, owner, repo string, opts domain.ListIssuesOptions) ([]entity.Issue, error) {
+			if owner != "myowner" || repo != "myrepo" {
+				t.Errorf("unexpected owner/repo: %s/%s", owner, repo)
+			}
+			if len(opts.Numbers) != 1 || opts.Numbers[0] != 42 {
+				t.Errorf("unexpected Numbers: %v, want [42]", opts.Numbers)
+			}
+			return []entity.Issue{expectedIssue}, nil
+		},
+		listIssueComments: func(_ context.Context, _, _ string, number int) ([]entity.Comment, error) {
+			if number != 42 {
+				t.Errorf("unexpected number: %d", number)
+			}
+			return expectedComments, nil
+		},
+		listTimelineEvents: func(_ context.Context, _, _ string, number int) ([]entity.TimelineEvent, error) {
+			if number != 42 {
+				t.Errorf("unexpected number: %d", number)
+			}
+			return expectedTimeline, nil
+		},
+	}
+
+	issue := 42
+	query := entity.Query{
+		Issue: &issue,
+		Repo:  "myowner/myrepo",
+	}
+
+	result, err := CollectData(context.Background(), mock, query)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(result.Issues) != 1 || result.Issues[0].Number != 42 {
+		t.Errorf("Issues = %v, want Issue #42", result.Issues)
+	}
+
+	comments, ok := result.Comments[42]
+	if !ok {
+		t.Fatal("Comments[42] not found")
+	}
+	if len(comments) != 1 {
+		t.Errorf("len(Comments[42]) = %d, want 1", len(comments))
+	}
+
+	timeline, ok := result.Timeline[42]
+	if !ok {
+		t.Fatal("Timeline[42] not found")
+	}
+	if len(timeline) != 1 {
+		t.Errorf("len(Timeline[42]) = %d, want 1", len(timeline))
+	}
+}
