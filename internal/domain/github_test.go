@@ -19,6 +19,18 @@ func (m *mockGitHubRepository) ListIssues(ctx context.Context, owner, repo strin
 	return nil, nil
 }
 
+func (m *mockGitHubRepository) ListIssueComments(ctx context.Context, owner, repo string, number int) ([]entity.Comment, error) {
+	return nil, nil
+}
+
+func (m *mockGitHubRepository) ListPullRequestComments(ctx context.Context, owner, repo string, number int) ([]entity.Comment, error) {
+	return nil, nil
+}
+
+func (m *mockGitHubRepository) ListTimelineEvents(ctx context.Context, owner, repo string, number int) ([]entity.TimelineEvent, error) {
+	return nil, nil
+}
+
 func TestGitHubRepository_InterfaceImplementation(t *testing.T) {
 	var _ GitHubRepository = &mockGitHubRepository{}
 }
