@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/canpok1/github-analyzer/internal/domain/entity"
-	"github.com/canpok1/github-analyzer/internal/infra/gemini"
 )
 
 // TODO: CLIフラグが設定されている場合、設定ファイルよりCLIフラグを優先
@@ -75,7 +74,7 @@ func TestApplyConfig_DefaultValues(t *testing.T) {
 	if q.Prompt != "" {
 		t.Errorf("Prompt = %q, want empty", q.Prompt)
 	}
-	if model != gemini.DefaultModel {
-		t.Errorf("Model = %q, want %q", model, gemini.DefaultModel)
+	if model != "" {
+		t.Errorf("Model = %q, want empty", model)
 	}
 }
