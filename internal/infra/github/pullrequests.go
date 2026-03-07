@@ -11,6 +11,11 @@ import (
 
 // ListPullRequests は指定リポジトリのPR一覧を取得する。
 func (c *Client) ListPullRequests(ctx context.Context, owner, repo string, opts domain.ListPullRequestsOptions) ([]entity.PullRequest, error) {
+	// Numbers指定がある場合は個別取得
+	if len(opts.Numbers) > 0 {
+		return c.getPullRequestsByNumbers(ctx, owner, repo, opts.Numbers)
+	}
+
 	apiState := resolveAPIState(opts.Status)
 
 	ghOpts := &gh.PullRequestListOptions{
@@ -51,6 +56,22 @@ func (c *Client) ListPullRequests(ctx context.Context, owner, repo string, opts 
 	}
 
 	return allPRs, nil
+}
+
+// getPullRequestsByNumbers は指定番号のPRを個別に取得する。
+func (c *Client) getPullRequestsByNumbers(ctx context.Context, owner, repo string, numbers []int) ([]entity.PullRequest, error) {
+	prs := make([]entity.PullRequest, 0, len(numbers))
+
+	for _, num := range numbers {
+		pr, _, err := c.client.PullRequests.Get(ctx, owner, repo, num)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get pull request #%d: %w", num, err)
+		}
+
+		prs = append(prs, convertPullRequest(pr))
+	}
+
+	return prs, nil
 }
 
 // resolveAPIState はStatusフィルタをGitHub API用のstate値に変換する。
