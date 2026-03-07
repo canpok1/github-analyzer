@@ -13,8 +13,17 @@ type ListPullRequestsOptions struct {
 	Status entity.PRState
 }
 
+// ListIssuesOptions はIssue一覧取得のオプション。
+type ListIssuesOptions struct {
+	Since   *time.Time
+	Status  entity.IssueState
+	Numbers []int
+}
+
 // GitHubRepository はGitHub APIへのアクセスを抽象化するインターフェース。
 type GitHubRepository interface {
 	// ListPullRequests は指定リポジトリのPR一覧を取得する。
 	ListPullRequests(ctx context.Context, owner, repo string, opts ListPullRequestsOptions) ([]entity.PullRequest, error)
+	// ListIssues は指定リポジトリのIssue一覧を取得する。
+	ListIssues(ctx context.Context, owner, repo string, opts ListIssuesOptions) ([]entity.Issue, error)
 }
