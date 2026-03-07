@@ -32,20 +32,9 @@ func (w *Writer) Write(content string) error {
 }
 
 // writeToFile はファイルにレポートを書き込む。
-func (w *Writer) writeToFile(content string) (err error) {
-	f, err := os.Create(w.outputPath)
-	if err != nil {
-		return fmt.Errorf("failed to create output file: %w", err)
-	}
-	defer func() {
-		if cerr := f.Close(); cerr != nil && err == nil {
-			err = fmt.Errorf("failed to close output file: %w", cerr)
-		}
-	}()
-
-	_, err = fmt.Fprint(f, content)
-	if err != nil {
-		return fmt.Errorf("failed to write to output file: %w", err)
+func (w *Writer) writeToFile(content string) error {
+	if err := os.WriteFile(w.outputPath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("failed to write output file: %w", err)
 	}
 	return nil
 }
