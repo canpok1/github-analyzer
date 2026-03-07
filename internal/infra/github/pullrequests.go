@@ -32,7 +32,7 @@ func (c *Client) ListPullRequests(ctx context.Context, owner, repo string, opts 
 
 		for _, pr := range prs {
 			// Sinceフィルタ: updatedで降順ソート済みのため、Since以前なら以降も全て古い
-			if opts.Since != nil && pr.GetUpdatedAt().Time.Before(*opts.Since) {
+			if opts.Since != nil && pr.GetUpdatedAt().Before(*opts.Since) {
 				return allPRs, nil
 			}
 
