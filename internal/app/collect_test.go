@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -291,6 +292,78 @@ func TestCollectData_NoTargetSpecified(t *testing.T) {
 	mock := &mockGitHubRepository{}
 	query := entity.Query{
 		Repo: "owner/repo",
+	}
+
+	_, err := CollectData(context.Background(), mock, query)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestCollectData_PRListError(t *testing.T) {
+	mock := &mockGitHubRepository{
+		listPullRequests: func(_ context.Context, _, _ string, _ domain.ListPullRequestsOptions) ([]entity.PullRequest, error) {
+			return nil, fmt.Errorf("api error")
+		},
+	}
+	since := time.Now()
+	query := entity.Query{Since: &since, Repo: "owner/repo"}
+
+	_, err := CollectData(context.Background(), mock, query)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestCollectData_IssueListError(t *testing.T) {
+	mock := &mockGitHubRepository{
+		listIssues: func(_ context.Context, _, _ string, _ domain.ListIssuesOptions) ([]entity.Issue, error) {
+			return nil, fmt.Errorf("api error")
+		},
+	}
+	issue := 42
+	query := entity.Query{Issue: &issue, Repo: "owner/repo"}
+
+	_, err := CollectData(context.Background(), mock, query)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestCollectData_CommentError(t *testing.T) {
+	mock := &mockGitHubRepository{
+		listIssueComments: func(_ context.Context, _, _ string, _ int) ([]entity.Comment, error) {
+			return nil, fmt.Errorf("api error")
+		},
+	}
+	issue := 42
+	query := entity.Query{Issue: &issue, Repo: "owner/repo"}
+
+	// ListIssuesは成功するが、ListIssueCommentsが失敗する
+	mock.listIssues = func(_ context.Context, _, _ string, _ domain.ListIssuesOptions) ([]entity.Issue, error) {
+		return []entity.Issue{{Number: 42}}, nil
+	}
+
+	_, err := CollectData(context.Background(), mock, query)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestCollectData_TimelineError(t *testing.T) {
+	mock := &mockGitHubRepository{
+		listIssueComments: func(_ context.Context, _, _ string, _ int) ([]entity.Comment, error) {
+			return nil, nil
+		},
+		listTimelineEvents: func(_ context.Context, _, _ string, _ int) ([]entity.TimelineEvent, error) {
+			return nil, fmt.Errorf("api error")
+		},
+	}
+	issue := 42
+	query := entity.Query{Issue: &issue, Repo: "owner/repo"}
+
+	mock.listIssues = func(_ context.Context, _, _ string, _ domain.ListIssuesOptions) ([]entity.Issue, error) {
+		return []entity.Issue{{Number: 42}}, nil
 	}
 
 	_, err := CollectData(context.Background(), mock, query)
