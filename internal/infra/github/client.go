@@ -1,10 +1,6 @@
 package github
 
 import (
-	"context"
-
-	"github.com/canpok1/github-analyzer/internal/domain"
-	"github.com/canpok1/github-analyzer/internal/domain/entity"
 	gh "github.com/google/go-github/v68/github"
 )
 
@@ -25,7 +21,3 @@ func NewClient(token string) *Client {
 	return &Client{client: client}
 }
 
-// ListPullRequests は指定リポジトリのPR一覧を取得する。
-func (c *Client) ListPullRequests(_ context.Context, _, _ string, _ domain.ListPullRequestsOptions) ([]entity.PullRequest, error) {
-	return nil, nil
-}
