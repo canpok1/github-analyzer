@@ -26,4 +26,10 @@ type GitHubRepository interface {
 	ListPullRequests(ctx context.Context, owner, repo string, opts ListPullRequestsOptions) ([]entity.PullRequest, error)
 	// ListIssues は指定リポジトリのIssue一覧を取得する。
 	ListIssues(ctx context.Context, owner, repo string, opts ListIssuesOptions) ([]entity.Issue, error)
+	// ListIssueComments は指定Issue/PRの一般コメント一覧を取得する。
+	ListIssueComments(ctx context.Context, owner, repo string, number int) ([]entity.Comment, error)
+	// ListPullRequestComments は指定PRのレビューコメント一覧を取得する。
+	ListPullRequestComments(ctx context.Context, owner, repo string, number int) ([]entity.Comment, error)
+	// ListTimelineEvents は指定Issue/PRのタイムラインイベント一覧を取得する。
+	ListTimelineEvents(ctx context.Context, owner, repo string, number int) ([]entity.TimelineEvent, error)
 }
