@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/canpok1/github-analyzer/internal/domain"
 	"github.com/canpok1/github-analyzer/internal/domain/entity"
@@ -82,5 +81,78 @@ func TestCollectData_ReturnsCollectedData(t *testing.T) {
 	}
 }
 
-// suppress unused import warnings
-var _ = time.Now
+func TestCollectData_SinglePR(t *testing.T) {
+	expectedPR := entity.PullRequest{
+		Number: 1024,
+		Title:  "Test PR",
+		State:  entity.PRStateOpen,
+		Author: "testuser",
+	}
+	expectedIssueComments := []entity.Comment{
+		{ID: 1, Body: "issue comment", Type: entity.CommentTypeIssue},
+	}
+	expectedReviewComments := []entity.Comment{
+		{ID: 2, Body: "review comment", Type: entity.CommentTypeReview},
+	}
+	expectedTimeline := []entity.TimelineEvent{
+		{ID: 3, Event: "labeled", Label: "bug"},
+	}
+
+	mock := &mockGitHubRepository{
+		listPullRequests: func(_ context.Context, owner, repo string, opts domain.ListPullRequestsOptions) ([]entity.PullRequest, error) {
+			if owner != "myowner" || repo != "myrepo" {
+				t.Errorf("unexpected owner/repo: %s/%s", owner, repo)
+			}
+			return []entity.PullRequest{expectedPR}, nil
+		},
+		listIssueComments: func(_ context.Context, _, _ string, number int) ([]entity.Comment, error) {
+			if number != 1024 {
+				t.Errorf("unexpected number: %d", number)
+			}
+			return expectedIssueComments, nil
+		},
+		listPullRequestComments: func(_ context.Context, _, _ string, number int) ([]entity.Comment, error) {
+			if number != 1024 {
+				t.Errorf("unexpected number: %d", number)
+			}
+			return expectedReviewComments, nil
+		},
+		listTimelineEvents: func(_ context.Context, _, _ string, number int) ([]entity.TimelineEvent, error) {
+			if number != 1024 {
+				t.Errorf("unexpected number: %d", number)
+			}
+			return expectedTimeline, nil
+		},
+	}
+
+	pr := 1024
+	query := entity.Query{
+		PR:   &pr,
+		Repo: "myowner/myrepo",
+	}
+
+	result, err := CollectData(context.Background(), mock, query)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(result.PullRequests) != 1 || result.PullRequests[0].Number != 1024 {
+		t.Errorf("PullRequests = %v, want PR #1024", result.PullRequests)
+	}
+
+	comments, ok := result.Comments[1024]
+	if !ok {
+		t.Fatal("Comments[1024] not found")
+	}
+	if len(comments) != 2 {
+		t.Errorf("len(Comments[1024]) = %d, want 2", len(comments))
+	}
+
+	timeline, ok := result.Timeline[1024]
+	if !ok {
+		t.Fatal("Timeline[1024] not found")
+	}
+	if len(timeline) != 1 {
+		t.Errorf("len(Timeline[1024]) = %d, want 1", len(timeline))
+	}
+}
