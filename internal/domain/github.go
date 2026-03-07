@@ -9,8 +9,9 @@ import (
 
 // ListPullRequestsOptions はPR一覧取得のオプション。
 type ListPullRequestsOptions struct {
-	Since  *time.Time
-	Status entity.PRState
+	Since   *time.Time
+	Status  entity.PRState
+	Numbers []int
 }
 
 // ListIssuesOptions はIssue一覧取得のオプション。

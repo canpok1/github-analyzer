@@ -216,6 +216,47 @@ func TestListPullRequests_Empty(t *testing.T) {
 	}
 }
 
+func TestListPullRequests_ByNumbers(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+
+	c, server := setupTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/repos/owner/repo/pulls/42" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+
+		pr := &gh.PullRequest{
+			Number:    gh.Ptr(42),
+			Title:     gh.Ptr("Target PR"),
+			State:     gh.Ptr("open"),
+			User:      &gh.User{Login: gh.Ptr("user1")},
+			CreatedAt: &gh.Timestamp{Time: now},
+			UpdatedAt: &gh.Timestamp{Time: now},
+			HTMLURL:   gh.Ptr("https://github.com/owner/repo/pull/42"),
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(pr)
+	})
+	defer server.Close()
+
+	results, err := c.ListPullRequests(context.Background(), "owner", "repo", domain.ListPullRequestsOptions{
+		Numbers: []int{42},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(results) != 1 {
+		t.Fatalf("got %d PRs, want 1", len(results))
+	}
+	if results[0].Number != 42 {
+		t.Errorf("Number = %d, want 42", results[0].Number)
+	}
+	if results[0].Title != "Target PR" {
+		t.Errorf("Title = %q, want %q", results[0].Title, "Target PR")
+	}
+}
+
 func TestListPullRequests_APIError(t *testing.T) {
 	c, server := setupTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)

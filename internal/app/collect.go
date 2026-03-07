@@ -54,16 +54,13 @@ func CollectData(ctx context.Context, gh domain.GitHubRepository, query entity.Q
 	}
 
 	if query.PR != nil {
-		prs, err := gh.ListPullRequests(ctx, owner, repo, domain.ListPullRequestsOptions{})
+		prs, err := gh.ListPullRequests(ctx, owner, repo, domain.ListPullRequestsOptions{
+			Numbers: []int{*query.PR},
+		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to list pull requests: %w", err)
 		}
-		// 指定PRのみフィルタ
-		for _, pr := range prs {
-			if pr.Number == *query.PR {
-				data.PullRequests = append(data.PullRequests, pr)
-			}
-		}
+		data.PullRequests = prs
 
 		if err := collectPRDetails(ctx, gh, owner, repo, *query.PR, data); err != nil {
 			return nil, err
