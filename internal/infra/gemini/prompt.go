@@ -2,12 +2,15 @@ package gemini
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/canpok1/github-analyzer/internal/app"
 	"github.com/canpok1/github-analyzer/internal/domain"
 	"github.com/canpok1/github-analyzer/internal/domain/entity"
 )
+
+const timeLayout = "2006-01-02 15:04:05"
 
 // DefaultPrompt はユーザーがプロンプトを指定しなかった場合に使用するデフォルトプロンプト。
 const DefaultPrompt = "チームの開発プロセスの健全性を分析し、改善点を提案してください。"
@@ -66,9 +69,10 @@ func buildDataString(data *app.CollectedData) string {
 
 	if len(data.Comments) > 0 {
 		sb.WriteString("# Comments\n\n")
-		for number, comments := range data.Comments {
+		commentKeys := sortedKeys(data.Comments)
+		for _, number := range commentKeys {
 			fmt.Fprintf(&sb, "## Comments for #%d\n\n", number)
-			for _, comment := range comments {
+			for _, comment := range data.Comments[number] {
 				writeComment(&sb, &comment)
 			}
 		}
@@ -76,9 +80,10 @@ func buildDataString(data *app.CollectedData) string {
 
 	if len(data.Timeline) > 0 {
 		sb.WriteString("# Timeline Events\n\n")
-		for number, events := range data.Timeline {
+		timelineKeys := sortedKeys(data.Timeline)
+		for _, number := range timelineKeys {
 			fmt.Fprintf(&sb, "## Timeline for #%d\n\n", number)
-			for _, event := range events {
+			for _, event := range data.Timeline[number] {
 				writeTimelineEvent(&sb, &event)
 			}
 		}
@@ -87,15 +92,25 @@ func buildDataString(data *app.CollectedData) string {
 	return sb.String()
 }
 
+// sortedKeys はmapのキーをソートして返す。
+func sortedKeys[V any](m map[int][]V) []int {
+	keys := make([]int, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+	return keys
+}
+
 // writePR はPR情報をフォーマットして書き込む。
 func writePR(sb *strings.Builder, pr *entity.PullRequest) {
 	fmt.Fprintf(sb, "## #%d: %s\n", pr.Number, pr.Title)
 	fmt.Fprintf(sb, "- State: %s\n", pr.State)
 	fmt.Fprintf(sb, "- Author: %s\n", pr.Author)
-	fmt.Fprintf(sb, "- Created: %s\n", pr.CreatedAt.Format("2006-01-02 15:04:05"))
-	fmt.Fprintf(sb, "- Updated: %s\n", pr.UpdatedAt.Format("2006-01-02 15:04:05"))
+	fmt.Fprintf(sb, "- Created: %s\n", pr.CreatedAt.Format(timeLayout))
+	fmt.Fprintf(sb, "- Updated: %s\n", pr.UpdatedAt.Format(timeLayout))
 	if pr.MergedAt != nil {
-		fmt.Fprintf(sb, "- Merged: %s\n", pr.MergedAt.Format("2006-01-02 15:04:05"))
+		fmt.Fprintf(sb, "- Merged: %s\n", pr.MergedAt.Format(timeLayout))
 	}
 	sb.WriteString("\n")
 }
@@ -105,10 +120,10 @@ func writeIssue(sb *strings.Builder, issue *entity.Issue) {
 	fmt.Fprintf(sb, "## #%d: %s\n", issue.Number, issue.Title)
 	fmt.Fprintf(sb, "- State: %s\n", issue.State)
 	fmt.Fprintf(sb, "- Author: %s\n", issue.Author)
-	fmt.Fprintf(sb, "- Created: %s\n", issue.CreatedAt.Format("2006-01-02 15:04:05"))
-	fmt.Fprintf(sb, "- Updated: %s\n", issue.UpdatedAt.Format("2006-01-02 15:04:05"))
+	fmt.Fprintf(sb, "- Created: %s\n", issue.CreatedAt.Format(timeLayout))
+	fmt.Fprintf(sb, "- Updated: %s\n", issue.UpdatedAt.Format(timeLayout))
 	if issue.ClosedAt != nil {
-		fmt.Fprintf(sb, "- Closed: %s\n", issue.ClosedAt.Format("2006-01-02 15:04:05"))
+		fmt.Fprintf(sb, "- Closed: %s\n", issue.ClosedAt.Format(timeLayout))
 	}
 	if len(issue.Labels) > 0 {
 		fmt.Fprintf(sb, "- Labels: %s\n", strings.Join(issue.Labels, ", "))
@@ -119,7 +134,7 @@ func writeIssue(sb *strings.Builder, issue *entity.Issue) {
 // writeComment はコメント情報をフォーマットして書き込む。
 func writeComment(sb *strings.Builder, comment *entity.Comment) {
 	fmt.Fprintf(sb, "- [%s] %s (%s): %s\n",
-		comment.CreatedAt.Format("2006-01-02 15:04:05"),
+		comment.CreatedAt.Format(timeLayout),
 		comment.Author,
 		comment.Type,
 		comment.Body,
@@ -129,7 +144,7 @@ func writeComment(sb *strings.Builder, comment *entity.Comment) {
 // writeTimelineEvent はタイムラインイベント情報をフォーマットして書き込む。
 func writeTimelineEvent(sb *strings.Builder, event *entity.TimelineEvent) {
 	fmt.Fprintf(sb, "- [%s] %s by %s",
-		event.CreatedAt.Format("2006-01-02 15:04:05"),
+		event.CreatedAt.Format(timeLayout),
 		event.Event,
 		event.Actor,
 	)
