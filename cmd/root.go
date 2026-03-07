@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/canpok1/github-analyzer/internal/app"
+	"github.com/canpok1/github-analyzer/internal/infra/config"
 	"github.com/canpok1/github-analyzer/internal/infra/gemini"
 	ghclient "github.com/canpok1/github-analyzer/internal/infra/github"
 	"github.com/canpok1/github-analyzer/internal/infra/report"
@@ -48,11 +49,19 @@ func runAnalyze(cmd *cobra.Command) error {
 
 	query := buildQuery(cmd)
 
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("設定ファイルの読み込みに失敗しました: %w", err)
+	}
+
+	query, model := applyConfig(query, cfg)
+
 	ghClient := ghclient.NewClient(token)
 	geminiClient, err := gemini.NewClient(geminiAPIKey)
 	if err != nil {
 		return err
 	}
+	geminiClient.SetModel(model)
 
 	outputPath, _ := cmd.Flags().GetString("output")
 	renderer := report.NewMarkdownRenderer()

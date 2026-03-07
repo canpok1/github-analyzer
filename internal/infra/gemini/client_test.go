@@ -25,6 +25,7 @@ import (
 // DONE: Analyze: 空コンテンツのレスポンス
 // DONE: Analyze: モデルのオーバーライド
 // DONE: Analyze: リクエストフォーマット確認
+// TODO: SetModel: モデル名を設定できる
 
 func TestNewClient_EmptyAPIKey_ReturnsError(t *testing.T) {
 	_, err := NewClient("")
@@ -233,6 +234,30 @@ func TestAnalyze_ModelOverride(t *testing.T) {
 	}
 	if strings.Contains(receivedURL, "key=") {
 		t.Errorf("URL should not contain API key in query params: %q", receivedURL)
+	}
+}
+
+func TestSetModel(t *testing.T) {
+	c, err := NewClient("test-api-key")
+	if err != nil {
+		t.Fatalf("NewClient returned unexpected error: %v", err)
+	}
+
+	c.SetModel("gemini-2.0-flash")
+	if c.model != "gemini-2.0-flash" {
+		t.Errorf("model = %q, want %q", c.model, "gemini-2.0-flash")
+	}
+}
+
+func TestSetModel_EmptyStringKeepsDefault(t *testing.T) {
+	c, err := NewClient("test-api-key")
+	if err != nil {
+		t.Fatalf("NewClient returned unexpected error: %v", err)
+	}
+
+	c.SetModel("")
+	if c.model != DefaultModel {
+		t.Errorf("model = %q, want %q", c.model, DefaultModel)
 	}
 }
 
