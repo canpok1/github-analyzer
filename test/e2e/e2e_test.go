@@ -29,113 +29,6 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestCLIHelp(t *testing.T) {
-	cmd := exec.Command(binaryPath, "--help")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("failed to run CLI with --help: %v\n%s", err, out)
-	}
-
-	output := string(out)
-
-	// コマンド名が含まれる
-	if !strings.Contains(output, "github-analyzer") {
-		t.Error("help output should contain 'github-analyzer'")
-	}
-
-	// 主要フラグが含まれる
-	expectedFlags := []string{"--today", "--since", "--pr", "--issue", "--output", "--repo", "--prompt", "--status"}
-	for _, flag := range expectedFlags {
-		if !strings.Contains(output, flag) {
-			t.Errorf("help output should contain %q", flag)
-		}
-	}
-}
-
-func TestCLINoFlags(t *testing.T) {
-	cmd := exec.Command(binaryPath)
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatal("expected error when no flags specified, got nil")
-	}
-
-	output := string(out)
-	if !strings.Contains(output, "--today") {
-		t.Error("error output should mention available flags like --today")
-	}
-}
-
-func TestCLITodayAndSinceConflict(t *testing.T) {
-	cmd := exec.Command(binaryPath, "--today", "--since", "7d")
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatal("expected error when --today and --since are both specified")
-	}
-
-	output := string(out)
-	if !strings.Contains(output, "--today") || !strings.Contains(output, "--since") {
-		t.Errorf("error output should mention --today and --since conflict: %s", output)
-	}
-}
-
-func TestCLIPRAndIssueConflict(t *testing.T) {
-	cmd := exec.Command(binaryPath, "--pr", "123", "--issue", "456")
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatal("expected error when --pr and --issue are both specified")
-	}
-
-	output := string(out)
-	if !strings.Contains(output, "--pr") || !strings.Contains(output, "--issue") {
-		t.Errorf("error output should mention --pr and --issue conflict: %s", output)
-	}
-}
-
-func TestCLISinceInvalidValue(t *testing.T) {
-	cmd := exec.Command(binaryPath, "--since", "invalid")
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatal("expected error for invalid --since value")
-	}
-
-	output := string(out)
-	if !strings.Contains(output, "--since") {
-		t.Errorf("error output should mention --since: %s", output)
-	}
-}
-
-func TestCLIMissingGHToken(t *testing.T) {
-	cmd := exec.Command(binaryPath, "--pr", "1", "--repo", "owner/repo")
-	// 環境変数をクリアした状態で実行
-	cmd.Env = filterEnv(os.Environ(), "GH_TOKEN", "GITHUB_TOKEN")
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatal("expected error when GH_TOKEN/GITHUB_TOKEN are not set")
-	}
-
-	output := string(out)
-	if !strings.Contains(output, "GH_TOKEN") && !strings.Contains(output, "GITHUB_TOKEN") {
-		t.Errorf("error output should mention GH_TOKEN or GITHUB_TOKEN: %s", output)
-	}
-}
-
-func TestCLIMissingGeminiAPIKey(t *testing.T) {
-	cmd := exec.Command(binaryPath, "--pr", "1", "--repo", "owner/repo")
-	// GH_TOKENは設定し、GEMINI_API_KEYをクリア
-	env := filterEnv(os.Environ(), "GEMINI_API_KEY")
-	env = append(env, "GH_TOKEN=dummy-token")
-	cmd.Env = env
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatal("expected error when GEMINI_API_KEY is not set")
-	}
-
-	output := string(out)
-	if !strings.Contains(output, "GEMINI_API_KEY") {
-		t.Errorf("error output should mention GEMINI_API_KEY: %s", output)
-	}
-}
-
 // filterEnv は環境変数リストから指定キーを除外する。
 func filterEnv(env []string, keys ...string) []string {
 	filtered := make([]string, 0, len(env))
@@ -160,6 +53,7 @@ func envWithoutTokens() []string {
 }
 
 // runCLI はCLIバイナリを指定引数・環境変数で実行し、出力とエラーを返す。
+// env が nil の場合は現在の環境変数をそのまま使用する。
 func runCLI(args []string, env []string) (string, error) {
 	cmd := exec.Command(binaryPath, args...)
 	if env != nil {
@@ -167,6 +61,20 @@ func runCLI(args []string, env []string) (string, error) {
 	}
 	out, err := cmd.CombinedOutput()
 	return string(out), err
+}
+
+// assertCLIError はCLIがエラー終了し、出力に期待文字列が含まれることを確認するヘルパー。
+func assertCLIError(t *testing.T, args []string, env []string, expectedSubstrings ...string) {
+	t.Helper()
+	output, err := runCLI(args, env)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	for _, s := range expectedSubstrings {
+		if !strings.Contains(output, s) {
+			t.Errorf("expected output to contain %q, got: %s", s, output)
+		}
+	}
 }
 
 // assertTokenError はバリデーション通過後にトークンエラーで失敗することを確認するヘルパー。
@@ -181,35 +89,56 @@ func assertTokenError(t *testing.T, args []string) {
 	}
 }
 
-func TestCLIOutputFlag(t *testing.T) {
-	tmpDir := t.TempDir()
-	outputPath := filepath.Join(tmpDir, "report.md")
-	assertTokenError(t, []string{"--pr", "1", "--repo", "owner/repo", "--output", outputPath})
+func TestCLIHelp(t *testing.T) {
+	output, err := runCLI([]string{"--help"}, nil)
+	if err != nil {
+		t.Fatalf("failed to run CLI with --help: %v\n%s", err, output)
+	}
+
+	if !strings.Contains(output, "github-analyzer") {
+		t.Error("help output should contain 'github-analyzer'")
+	}
+
+	expectedFlags := []string{"--today", "--since", "--pr", "--issue", "--output", "--repo", "--prompt", "--status"}
+	for _, flag := range expectedFlags {
+		if !strings.Contains(output, flag) {
+			t.Errorf("help output should contain %q", flag)
+		}
+	}
+}
+
+func TestCLIVersion(t *testing.T) {
+	output, err := runCLI([]string{"--version"}, nil)
+	if err != nil {
+		t.Fatalf("failed to run CLI: %v\n%s", err, output)
+	}
+	if len(output) == 0 {
+		t.Fatal("expected version output, got empty")
+	}
+}
+
+func TestCLINoFlags(t *testing.T) {
+	assertCLIError(t, nil, nil, "--today")
 }
 
 func TestCLIUnknownFlag(t *testing.T) {
-	cmd := exec.Command(binaryPath, "--unknown-flag")
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatal("expected error for unknown flag")
-	}
-
-	output := string(out)
-	if !strings.Contains(output, "unknown flag") {
-		t.Errorf("error output should mention 'unknown flag': %s", output)
-	}
+	assertCLIError(t, []string{"--unknown-flag"}, nil, "unknown flag")
 }
 
-func TestCLIStatusFlag(t *testing.T) {
-	for _, status := range []string{"open", "merged", "closed"} {
-		t.Run(status, func(t *testing.T) {
-			assertTokenError(t, []string{"--today", "--status", status})
-		})
-	}
+func TestCLITodayAndSinceConflict(t *testing.T) {
+	assertCLIError(t, []string{"--today", "--since", "7d"}, nil, "--today", "--since")
 }
 
-func TestCLIPromptFlag(t *testing.T) {
-	assertTokenError(t, []string{"--pr", "1", "--repo", "owner/repo", "--prompt", "コードの品質を分析してください"})
+func TestCLIPRAndIssueConflict(t *testing.T) {
+	assertCLIError(t, []string{"--pr", "123", "--issue", "456"}, nil, "--pr", "--issue")
+}
+
+func TestCLITodayAndSinceAndPRConflict(t *testing.T) {
+	assertCLIError(t, []string{"--today", "--since", "7d", "--pr", "1"}, nil, "--today", "--since")
+}
+
+func TestCLISinceInvalidValue(t *testing.T) {
+	assertCLIError(t, []string{"--since", "invalid"}, nil, "--since")
 }
 
 func TestCLISinceValidValues(t *testing.T) {
@@ -224,6 +153,57 @@ func TestCLISinceValidValues(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCLIZeroValueTargets(t *testing.T) {
+	for _, flag := range []string{"--pr", "--issue"} {
+		t.Run(flag, func(t *testing.T) {
+			output, err := runCLI([]string{flag, "0"}, nil)
+			if err == nil {
+				t.Fatal("expected error when " + flag + " 0 is specified")
+			}
+			if !strings.Contains(output, "いずれかを指定してください") && !strings.Contains(output, "--today") {
+				t.Errorf("error output should indicate no target specified: %s", output)
+			}
+		})
+	}
+}
+
+func TestCLIMissingGHToken(t *testing.T) {
+	output, err := runCLI(
+		[]string{"--pr", "1", "--repo", "owner/repo"},
+		filterEnv(os.Environ(), "GH_TOKEN", "GITHUB_TOKEN"),
+	)
+	if err == nil {
+		t.Fatal("expected error when GH_TOKEN/GITHUB_TOKEN are not set")
+	}
+	if !strings.Contains(output, "GH_TOKEN") && !strings.Contains(output, "GITHUB_TOKEN") {
+		t.Errorf("error output should mention GH_TOKEN or GITHUB_TOKEN: %s", output)
+	}
+}
+
+func TestCLIMissingGeminiAPIKey(t *testing.T) {
+	env := filterEnv(os.Environ(), "GEMINI_API_KEY")
+	env = append(env, "GH_TOKEN=dummy-token")
+	output, err := runCLI([]string{"--pr", "1", "--repo", "owner/repo"}, env)
+	if err == nil {
+		t.Fatal("expected error when GEMINI_API_KEY is not set")
+	}
+	if !strings.Contains(output, "GEMINI_API_KEY") {
+		t.Errorf("error output should mention GEMINI_API_KEY: %s", output)
+	}
+}
+
+func TestCLIStatusFlag(t *testing.T) {
+	for _, status := range []string{"open", "merged", "closed"} {
+		t.Run(status, func(t *testing.T) {
+			assertTokenError(t, []string{"--today", "--status", status})
+		})
+	}
+}
+
+func TestCLIPromptFlag(t *testing.T) {
+	assertTokenError(t, []string{"--pr", "1", "--repo", "owner/repo", "--prompt", "コードの品質を分析してください"})
 }
 
 func TestCLIIssueFlag(t *testing.T) {
@@ -246,60 +226,19 @@ func TestCLIValidFlagCombinations(t *testing.T) {
 	}
 }
 
-func TestCLIPRZeroValue(t *testing.T) {
-	// --pr 0 は対象未指定と同等
-	cmd := exec.Command(binaryPath, "--pr", "0")
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatal("expected error when --pr 0 is specified")
+func TestCLIOutputFlag(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+	}{
+		{"simple", "report.md"},
+		{"subdir", filepath.Join("subdir", "report.md")},
 	}
-
-	output := string(out)
-	if !strings.Contains(output, "いずれかを指定してください") && !strings.Contains(output, "--today") {
-		t.Errorf("error output should indicate no target specified: %s", output)
-	}
-}
-
-func TestCLIIssueZeroValue(t *testing.T) {
-	// --issue 0 は対象未指定と同等
-	cmd := exec.Command(binaryPath, "--issue", "0")
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatal("expected error when --issue 0 is specified")
-	}
-
-	output := string(out)
-	if !strings.Contains(output, "いずれかを指定してください") && !strings.Contains(output, "--today") {
-		t.Errorf("error output should indicate no target specified: %s", output)
-	}
-}
-
-func TestCLITodayAndSinceAndPRConflict(t *testing.T) {
-	cmd := exec.Command(binaryPath, "--today", "--since", "7d", "--pr", "1")
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatal("expected error when --today, --since, and --pr are all specified")
-	}
-
-	output := string(out)
-	if !strings.Contains(output, "--today") || !strings.Contains(output, "--since") {
-		t.Errorf("error output should mention --today and --since conflict: %s", output)
-	}
-}
-
-func TestCLIOutputWithSubdirPath(t *testing.T) {
-	tmpDir := t.TempDir()
-	outputPath := filepath.Join(tmpDir, "subdir", "report.md")
-	assertTokenError(t, []string{"--pr", "1", "--repo", "owner/repo", "--output", outputPath})
-}
-
-func TestCLIVersion(t *testing.T) {
-	cmd := exec.Command(binaryPath, "--version")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("failed to run CLI: %v\n%s", err, out)
-	}
-	if len(out) == 0 {
-		t.Fatal("expected version output, got empty")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			outputPath := filepath.Join(tmpDir, tt.path)
+			assertTokenError(t, []string{"--pr", "1", "--repo", "owner/repo", "--output", outputPath})
+		})
 	}
 }
