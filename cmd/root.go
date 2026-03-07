@@ -13,6 +13,10 @@ func makeRootCmd() *cobra.Command {
 		Version: version,
 	}
 	cmd.SilenceUsage = true
+	defineFlags(cmd)
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		return validateFlags(cmd)
+	}
 	return cmd
 }
 

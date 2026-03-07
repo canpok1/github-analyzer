@@ -5,16 +5,15 @@ import (
 	"time"
 )
 
-
 func TestQuery_HasExpectedFields(t *testing.T) {
 	now := time.Now()
 	q := Query{
-		Since:    &now,
-		PR:       intPtr(123),
-		Issue:    intPtr(456),
-		Status:   "open",
-		Prompt:   "テスト分析",
-		Repo:     "owner/repo",
+		Since:  &now,
+		PR:     intPtr(123),
+		Issue:  intPtr(456),
+		Status: "open",
+		Prompt: "テスト分析",
+		Repo:   "owner/repo",
 	}
 
 	if q.Since == nil || !q.Since.Equal(now) {

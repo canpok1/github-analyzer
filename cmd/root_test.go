@@ -5,10 +5,10 @@ import (
 	"testing"
 )
 
-func TestExecute_Success(t *testing.T) {
+func TestExecute_NoArgs_ReturnsError(t *testing.T) {
 	err := Execute()
-	if err != nil {
-		t.Fatalf("Execute() returned error: %v", err)
+	if err == nil {
+		t.Fatal("Execute() without args should return error")
 	}
 }
 
