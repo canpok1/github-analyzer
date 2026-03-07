@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -26,6 +27,175 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(m.Run())
+}
+
+// DONE: 正常系: --help の出力にコマンド名と主要フラグが含まれる
+// DONE: 正常系: --version の出力にバージョン情報が含まれる
+// DONE: 異常系: フラグ未指定時にエラーメッセージを出力する
+// DONE: 異常系: --today と --since の同時指定でエラーを出力する
+// DONE: 異常系: --pr と --issue の同時指定でエラーを出力する
+// DONE: 異常系: --since に不正な値を指定した場合にエラーを出力する
+// DONE: 異常系: GH_TOKEN/GITHUB_TOKEN 未設定時にエラーメッセージを出力する
+// DONE: 異常系: GEMINI_API_KEY 未設定時にエラーメッセージを出力する
+// DONE: 正常系: --output でファイル出力先を指定できる（バリデーション通過確認）
+// DONE: 異常系: 未知のフラグを指定した場合にエラーを出力する
+
+func TestCLIHelp(t *testing.T) {
+	cmd := exec.Command(binaryPath, "--help")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("failed to run CLI with --help: %v\n%s", err, out)
+	}
+
+	output := string(out)
+
+	// コマンド名が含まれる
+	if !strings.Contains(output, "github-analyzer") {
+		t.Error("help output should contain 'github-analyzer'")
+	}
+
+	// 主要フラグが含まれる
+	expectedFlags := []string{"--today", "--since", "--pr", "--issue", "--output", "--repo", "--prompt", "--status"}
+	for _, flag := range expectedFlags {
+		if !strings.Contains(output, flag) {
+			t.Errorf("help output should contain %q", flag)
+		}
+	}
+}
+
+func TestCLINoFlags(t *testing.T) {
+	cmd := exec.Command(binaryPath)
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatal("expected error when no flags specified, got nil")
+	}
+
+	output := string(out)
+	if !strings.Contains(output, "--today") {
+		t.Error("error output should mention available flags like --today")
+	}
+}
+
+func TestCLITodayAndSinceConflict(t *testing.T) {
+	cmd := exec.Command(binaryPath, "--today", "--since", "7d")
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatal("expected error when --today and --since are both specified")
+	}
+
+	output := string(out)
+	if !strings.Contains(output, "--today") || !strings.Contains(output, "--since") {
+		t.Errorf("error output should mention --today and --since conflict: %s", output)
+	}
+}
+
+func TestCLIPRAndIssueConflict(t *testing.T) {
+	cmd := exec.Command(binaryPath, "--pr", "123", "--issue", "456")
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatal("expected error when --pr and --issue are both specified")
+	}
+
+	output := string(out)
+	if !strings.Contains(output, "--pr") || !strings.Contains(output, "--issue") {
+		t.Errorf("error output should mention --pr and --issue conflict: %s", output)
+	}
+}
+
+func TestCLISinceInvalidValue(t *testing.T) {
+	cmd := exec.Command(binaryPath, "--since", "invalid")
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatal("expected error for invalid --since value")
+	}
+
+	output := string(out)
+	if !strings.Contains(output, "--since") {
+		t.Errorf("error output should mention --since: %s", output)
+	}
+}
+
+func TestCLIMissingGHToken(t *testing.T) {
+	cmd := exec.Command(binaryPath, "--pr", "1", "--repo", "owner/repo")
+	// 環境変数をクリアした状態で実行
+	cmd.Env = filterEnv(os.Environ(), "GH_TOKEN", "GITHUB_TOKEN")
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatal("expected error when GH_TOKEN/GITHUB_TOKEN are not set")
+	}
+
+	output := string(out)
+	if !strings.Contains(output, "GH_TOKEN") && !strings.Contains(output, "GITHUB_TOKEN") {
+		t.Errorf("error output should mention GH_TOKEN or GITHUB_TOKEN: %s", output)
+	}
+}
+
+func TestCLIMissingGeminiAPIKey(t *testing.T) {
+	cmd := exec.Command(binaryPath, "--pr", "1", "--repo", "owner/repo")
+	// GH_TOKENは設定し、GEMINI_API_KEYをクリア
+	env := filterEnv(os.Environ(), "GEMINI_API_KEY")
+	env = append(env, "GH_TOKEN=dummy-token")
+	cmd.Env = env
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatal("expected error when GEMINI_API_KEY is not set")
+	}
+
+	output := string(out)
+	if !strings.Contains(output, "GEMINI_API_KEY") {
+		t.Errorf("error output should mention GEMINI_API_KEY: %s", output)
+	}
+}
+
+// filterEnv は環境変数リストから指定キーを除外する。
+func filterEnv(env []string, keys ...string) []string {
+	filtered := make([]string, 0, len(env))
+	for _, e := range env {
+		exclude := false
+		for _, key := range keys {
+			if strings.HasPrefix(e, key+"=") {
+				exclude = true
+				break
+			}
+		}
+		if !exclude {
+			filtered = append(filtered, e)
+		}
+	}
+	return filtered
+}
+
+func TestCLIOutputFlag(t *testing.T) {
+	// --output フラグ付きで実行（トークン未設定エラーになるが、バリデーションは通過するはず）
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "report.md")
+	cmd := exec.Command(binaryPath, "--pr", "1", "--repo", "owner/repo", "--output", outputPath)
+	cmd.Env = filterEnv(os.Environ(), "GH_TOKEN", "GITHUB_TOKEN", "GEMINI_API_KEY")
+	out, err := cmd.CombinedOutput()
+
+	// トークン未設定エラーで失敗するが、フラグバリデーションエラーではないことを確認
+	if err == nil {
+		t.Fatal("expected error (missing token), got nil")
+	}
+
+	output := string(out)
+	// バリデーションエラーではなくトークンエラーになること
+	if strings.Contains(output, "--today") && strings.Contains(output, "--since") && strings.Contains(output, "--pr") {
+		t.Error("should not be a validation error, expected token error")
+	}
+}
+
+func TestCLIUnknownFlag(t *testing.T) {
+	cmd := exec.Command(binaryPath, "--unknown-flag")
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatal("expected error for unknown flag")
+	}
+
+	output := string(out)
+	if !strings.Contains(output, "unknown flag") {
+		t.Errorf("error output should mention 'unknown flag': %s", output)
+	}
 }
 
 func TestCLIVersion(t *testing.T) {
