@@ -4,12 +4,12 @@
 #
 # テストリスト:
 # DONE: タグが存在しない場合、v0.0.1 を新しいバージョンとする
-# TODO: v0.0.1 が存在する場合、v0.0.2 を新しいバージョンとする
-# TODO: v1.2.3 が存在する場合、v1.2.4 を新しいバージョンとする
-# TODO: プレリリースタグ（v1.0.0-rc1）が存在する場合、無視される
-# TODO: 複数タグが存在する場合、最新のものからインクリメントする
-# TODO: --dry-run モードではタグの作成・プッシュをスキップする
-# TODO: 不明なオプションが渡された場合、エラー終了する
+# DONE: v0.0.1 が存在する場合、v0.0.2 を新しいバージョンとする
+# DONE: v1.2.3 が存在する場合、v1.2.4 を新しいバージョンとする
+# DONE: プレリリースタグ（v1.0.0-rc1）が存在する場合、無視される
+# DONE: 複数タグが存在する場合、最新のものからインクリメントする
+# DONE: --dry-run モードではタグの作成・プッシュをスキップする
+# DONE: 不明なオプションが渡された場合、エラー終了する
 
 set -euo pipefail
 
@@ -98,6 +98,70 @@ test_no_existing_tags() {
     assert_output_contains "新しいバージョン: v0.0.1" "$output"
 }
 run_test "タグが存在しない場合、v0.0.1を新しいバージョンとする" test_no_existing_tags
+
+# テスト2: v0.0.1 が存在する場合、v0.0.2 を新しいバージョンとする
+test_increment_patch_from_001() {
+    git tag v0.0.1
+    local output
+    output=$("$SCRIPT_UNDER_TEST" --dry-run 2>&1)
+    assert_output_contains "新しいバージョン: v0.0.2" "$output"
+}
+run_test "v0.0.1が存在する場合、v0.0.2を新しいバージョンとする" test_increment_patch_from_001
+
+# テスト3: v1.2.3 が存在する場合、v1.2.4 を新しいバージョンとする
+test_increment_patch_from_123() {
+    git tag v1.2.3
+    local output
+    output=$("$SCRIPT_UNDER_TEST" --dry-run 2>&1)
+    assert_output_contains "新しいバージョン: v1.2.4" "$output"
+}
+run_test "v1.2.3が存在する場合、v1.2.4を新しいバージョンとする" test_increment_patch_from_123
+
+# テスト4: プレリリースタグが存在する場合、無視される
+test_ignore_prerelease_tags() {
+    git tag v1.0.0-rc1
+    local output
+    output=$("$SCRIPT_UNDER_TEST" --dry-run 2>&1)
+    # プレリリースタグしかないので、v0.0.1 になるはず
+    assert_output_contains "新しいバージョン: v0.0.1" "$output"
+}
+run_test "プレリリースタグが存在する場合、無視される" test_ignore_prerelease_tags
+
+# テスト5: 複数タグが存在する場合、最新のものからインクリメントする
+test_multiple_tags_uses_latest() {
+    git tag v0.1.0
+    git tag v0.2.0
+    git tag v0.1.5
+    local output
+    output=$("$SCRIPT_UNDER_TEST" --dry-run 2>&1)
+    # v0.2.0 が最新なので、v0.2.1 になるはず
+    assert_output_contains "新しいバージョン: v0.2.1" "$output"
+}
+run_test "複数タグが存在する場合、最新のものからインクリメントする" test_multiple_tags_uses_latest
+
+# テスト6: --dry-run モードではタグの作成・プッシュをスキップする
+test_dry_run_skips_tag_creation() {
+    local output
+    output=$("$SCRIPT_UNDER_TEST" --dry-run 2>&1)
+    assert_output_contains "[ドライラン] タグの作成とプッシュをスキップします。" "$output"
+    # タグが作成されていないことを確認
+    local tag_count
+    tag_count=$(git tag -l | wc -l)
+    if [[ "$tag_count" -ne 0 ]]; then
+        echo "  FAIL: ドライランモードでタグが作成されています（タグ数: $tag_count）"
+        return 1
+    fi
+}
+run_test "--dry-runモードではタグの作成・プッシュをスキップする" test_dry_run_skips_tag_creation
+
+# テスト7: 不明なオプションが渡された場合、エラー終了する
+test_unknown_option_exits_with_error() {
+    local output
+    local exit_code=0
+    output=$("$SCRIPT_UNDER_TEST" --unknown 2>&1) || exit_code=$?
+    assert_exit_code 1 "$exit_code" && assert_output_contains "不明なオプション: --unknown" "$output"
+}
+run_test "不明なオプションが渡された場合、エラー終了する" test_unknown_option_exits_with_error
 
 # テスト結果のサマリー
 print_summary() {
