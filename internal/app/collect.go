@@ -29,6 +29,12 @@ func CollectData(ctx context.Context, gh domain.GitHubRepository, query entity.Q
 		Timeline: make(map[int][]entity.TimelineEvent),
 	}
 
+	if query.Since != nil {
+		if err := collectByPeriod(ctx, gh, owner, repo, query, data); err != nil {
+			return nil, err
+		}
+	}
+
 	if query.Issue != nil {
 		issues, err := gh.ListIssues(ctx, owner, repo, domain.ListIssuesOptions{
 			Numbers: []int{*query.Issue},
@@ -102,6 +108,39 @@ func collectIssueDetails(ctx context.Context, gh domain.GitHubRepository, owner,
 		return fmt.Errorf("failed to list timeline events for issue #%d: %w", number, err)
 	}
 	data.Timeline[number] = timeline
+
+	return nil
+}
+
+// collectByPeriod は期間指定時にPR/Issueを一括取得し、各詳細を収集する。
+func collectByPeriod(ctx context.Context, gh domain.GitHubRepository, owner, repo string, query entity.Query, data *CollectedData) error {
+	prs, err := gh.ListPullRequests(ctx, owner, repo, domain.ListPullRequestsOptions{
+		Since: query.Since,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to list pull requests: %w", err)
+	}
+	data.PullRequests = prs
+
+	for _, pr := range prs {
+		if err := collectPRDetails(ctx, gh, owner, repo, pr.Number, data); err != nil {
+			return err
+		}
+	}
+
+	issues, err := gh.ListIssues(ctx, owner, repo, domain.ListIssuesOptions{
+		Since: query.Since,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to list issues: %w", err)
+	}
+	data.Issues = issues
+
+	for _, issue := range issues {
+		if err := collectIssueDetails(ctx, gh, owner, repo, issue.Number, data); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

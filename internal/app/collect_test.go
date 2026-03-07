@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/canpok1/github-analyzer/internal/domain"
 	"github.com/canpok1/github-analyzer/internal/domain/entity"
@@ -224,5 +225,64 @@ func TestCollectData_SingleIssue(t *testing.T) {
 	}
 	if len(timeline) != 1 {
 		t.Errorf("len(Timeline[42]) = %d, want 1", len(timeline))
+	}
+}
+
+func TestCollectData_Since(t *testing.T) {
+	since := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+
+	pr1 := entity.PullRequest{Number: 10, Title: "PR 10"}
+	pr2 := entity.PullRequest{Number: 11, Title: "PR 11"}
+	issue1 := entity.Issue{Number: 20, Title: "Issue 20"}
+
+	mock := &mockGitHubRepository{
+		listPullRequests: func(_ context.Context, _, _ string, opts domain.ListPullRequestsOptions) ([]entity.PullRequest, error) {
+			if opts.Since == nil || !opts.Since.Equal(since) {
+				t.Errorf("unexpected Since: %v", opts.Since)
+			}
+			return []entity.PullRequest{pr1, pr2}, nil
+		},
+		listIssues: func(_ context.Context, _, _ string, opts domain.ListIssuesOptions) ([]entity.Issue, error) {
+			if opts.Since == nil || !opts.Since.Equal(since) {
+				t.Errorf("unexpected Since: %v", opts.Since)
+			}
+			return []entity.Issue{issue1}, nil
+		},
+		listIssueComments: func(_ context.Context, _, _ string, _ int) ([]entity.Comment, error) {
+			return []entity.Comment{{ID: 100, Body: "c"}}, nil
+		},
+		listPullRequestComments: func(_ context.Context, _, _ string, _ int) ([]entity.Comment, error) {
+			return nil, nil
+		},
+		listTimelineEvents: func(_ context.Context, _, _ string, _ int) ([]entity.TimelineEvent, error) {
+			return []entity.TimelineEvent{{ID: 200, Event: "e"}}, nil
+		},
+	}
+
+	query := entity.Query{
+		Since: &since,
+		Repo:  "owner/repo",
+	}
+
+	result, err := CollectData(context.Background(), mock, query)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(result.PullRequests) != 2 {
+		t.Errorf("len(PullRequests) = %d, want 2", len(result.PullRequests))
+	}
+	if len(result.Issues) != 1 {
+		t.Errorf("len(Issues) = %d, want 1", len(result.Issues))
+	}
+
+	// PR 10, 11 と Issue 20 のコメント・タイムラインが取得されていること
+	for _, num := range []int{10, 11, 20} {
+		if _, ok := result.Comments[num]; !ok {
+			t.Errorf("Comments[%d] not found", num)
+		}
+		if _, ok := result.Timeline[num]; !ok {
+			t.Errorf("Timeline[%d] not found", num)
+		}
 	}
 }
