@@ -21,7 +21,7 @@ func resolveToken() (string, error) {
 }
 
 // buildQuery はcobraコマンドのフラグからQueryを構築する。
-func buildQuery(cmd *cobra.Command) (entity.Query, error) {
+func buildQuery(cmd *cobra.Command) entity.Query {
 	query := entity.Query{}
 
 	repo, _ := cmd.Flags().GetString("repo")
@@ -45,10 +45,7 @@ func buildQuery(cmd *cobra.Command) (entity.Query, error) {
 	}
 
 	if sinceStr != "" {
-		dur, err := entity.ParseDuration(sinceStr)
-		if err != nil {
-			return entity.Query{}, fmt.Errorf("--since の値が不正です: %w", err)
-		}
+		dur, _ := entity.ParseDuration(sinceStr)
 		since := time.Now().Add(-dur)
 		query.Since = &since
 	}
@@ -61,5 +58,5 @@ func buildQuery(cmd *cobra.Command) (entity.Query, error) {
 		query.Issue = &issue
 	}
 
-	return query, nil
+	return query
 }

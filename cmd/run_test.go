@@ -12,8 +12,8 @@ import (
 // DONE: 正常系: buildQueryがフラグからQueryを正しく構築する
 // DONE: 正常系: --todayフラグでSinceが当日0時に設定される
 // DONE: 正常系: --sinceフラグでSinceが正しく計算される
-// TODO: 異常系: GEMINI_API_KEY未設定の場合エラーを返す
-// TODO: 正常系: runAnalyzeがフラグから依存を構築して実行する
+// DONE: 異常系: GEMINI_API_KEY未設定の場合エラーを返す
+// DONE: 異常系: GH_TOKEN/GITHUB_TOKEN未設定の場合エラーを返す
 
 func TestResolveToken_GHTokenPriority(t *testing.T) {
 	t.Setenv("GH_TOKEN", "gh-token-value")
@@ -56,15 +56,11 @@ func TestResolveToken_BothUnset(t *testing.T) {
 
 func TestBuildQuery_WithPR(t *testing.T) {
 	cmd := makeRootCmd()
-	cmd.SetArgs([]string{"--pr", "42", "--repo", "owner/repo"})
 	if err := cmd.ParseFlags([]string{"--pr", "42", "--repo", "owner/repo"}); err != nil {
 		t.Fatalf("failed to parse flags: %v", err)
 	}
 
-	query, err := buildQuery(cmd)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	query := buildQuery(cmd)
 	if query.PR == nil || *query.PR != 42 {
 		t.Errorf("expected PR=42, got %v", query.PR)
 	}
@@ -79,10 +75,7 @@ func TestBuildQuery_WithIssue(t *testing.T) {
 		t.Fatalf("failed to parse flags: %v", err)
 	}
 
-	query, err := buildQuery(cmd)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	query := buildQuery(cmd)
 	if query.Issue == nil || *query.Issue != 10 {
 		t.Errorf("expected Issue=10, got %v", query.Issue)
 	}
@@ -94,10 +87,7 @@ func TestBuildQuery_WithToday(t *testing.T) {
 		t.Fatalf("failed to parse flags: %v", err)
 	}
 
-	query, err := buildQuery(cmd)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	query := buildQuery(cmd)
 	if query.Since == nil {
 		t.Fatal("expected Since to be set")
 	}
@@ -115,10 +105,7 @@ func TestBuildQuery_WithSince(t *testing.T) {
 		t.Fatalf("failed to parse flags: %v", err)
 	}
 
-	query, err := buildQuery(cmd)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	query := buildQuery(cmd)
 	if query.Since == nil {
 		t.Fatal("expected Since to be set")
 	}
@@ -170,10 +157,7 @@ func TestBuildQuery_WithPrompt(t *testing.T) {
 		t.Fatalf("failed to parse flags: %v", err)
 	}
 
-	query, err := buildQuery(cmd)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	query := buildQuery(cmd)
 	if query.Prompt != "check quality" {
 		t.Errorf("expected Prompt='check quality', got %q", query.Prompt)
 	}

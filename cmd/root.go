@@ -46,10 +46,7 @@ func runAnalyze(cmd *cobra.Command) error {
 		return fmt.Errorf("GEMINI_API_KEY 環境変数を設定してください")
 	}
 
-	query, err := buildQuery(cmd)
-	if err != nil {
-		return err
-	}
+	query := buildQuery(cmd)
 
 	ghClient := ghclient.NewClient(token)
 	geminiClient, err := gemini.NewClient(geminiAPIKey)

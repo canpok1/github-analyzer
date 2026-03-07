@@ -1,39 +1,11 @@
 package gemini
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
-	"github.com/canpok1/github-analyzer/internal/app"
-	"github.com/canpok1/github-analyzer/internal/domain"
 	"github.com/canpok1/github-analyzer/internal/domain/entity"
 )
-
-// AnalyzeReport はCollectedDataとユーザープロンプトを受け取り、
-// BuildPrompt → Analyze → ParseReport の流れでレポートを生成する。
-func AnalyzeReport(ctx context.Context, analyzer domain.Analyzer, data *app.CollectedData, userPrompt string) (*entity.Report, error) {
-	if data == nil {
-		return nil, fmt.Errorf("data must not be nil")
-	}
-	if analyzer == nil {
-		return nil, fmt.Errorf("analyzer must not be nil")
-	}
-
-	req := BuildPrompt(data, userPrompt)
-
-	resp, err := analyzer.Analyze(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("analysis failed: %w", err)
-	}
-
-	report, err := ParseReport(resp.Content)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse report: %w", err)
-	}
-
-	return report, nil
-}
 
 // sectionHeaders はレポートの各セクション見出し。
 var sectionHeaders = []string{
