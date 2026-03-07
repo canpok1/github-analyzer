@@ -29,6 +29,10 @@ func CollectData(ctx context.Context, gh domain.GitHubRepository, query entity.Q
 		Timeline: make(map[int][]entity.TimelineEvent),
 	}
 
+	if query.Since == nil && query.PR == nil && query.Issue == nil {
+		return nil, fmt.Errorf("no target specified: specify --pr, --issue, --since, or --today")
+	}
+
 	if query.Since != nil {
 		if err := collectByPeriod(ctx, gh, owner, repo, query, data); err != nil {
 			return nil, err

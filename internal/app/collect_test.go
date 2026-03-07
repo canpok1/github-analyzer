@@ -14,7 +14,7 @@ import (
 // TODO: 単一PR指定 -- PRのデータとコメント・タイムラインを取得すること
 // TODO: 単一Issue指定 -- Issueのデータとコメント・タイムラインを取得すること
 // TODO: 期間指定(since) -- 期間内の全PR/Issueとコメント・タイムラインを取得すること
-// TODO: 期間指定(today) -- 当日の全PR/Issueとコメント・タイムラインを取得すること
+// DONE: 期間指定(today) -- sinceと同じロジックパス（cmd層でSinceにセットされる）
 // TODO: PR取得エラー時にエラーを返すこと
 // TODO: Issue取得エラー時にエラーを返すこと
 // TODO: コメント取得エラー時にエラーを返すこと
@@ -284,5 +284,17 @@ func TestCollectData_Since(t *testing.T) {
 		if _, ok := result.Timeline[num]; !ok {
 			t.Errorf("Timeline[%d] not found", num)
 		}
+	}
+}
+
+func TestCollectData_NoTargetSpecified(t *testing.T) {
+	mock := &mockGitHubRepository{}
+	query := entity.Query{
+		Repo: "owner/repo",
+	}
+
+	_, err := CollectData(context.Background(), mock, query)
+	if err == nil {
+		t.Fatal("expected error, got nil")
 	}
 }
