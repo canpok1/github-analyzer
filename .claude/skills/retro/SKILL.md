@@ -1,6 +1,6 @@
 ---
 name: retro
-description: 作業セッションを振り返り、改善点を分析してGitHub Issueを作成します。会話セッション終了時に使用してください。
+description: 直前の作業内容を振り返り、改善点を分析してGitHub Issueを作成します。作業完了後に使用してください。
 context: fork
 agent: general-purpose
 allowed-tools: Read, Grep, Glob, Bash(gh issue create *), Bash(gh issue list *)
@@ -10,7 +10,7 @@ user-invocable: true
 
 振り返りを行います。
 
-1. 会話セッションでの作業内容を振り返る
+1. 直前の作業内容を振り返る
   - 実施タスク
   - 使用したスキル/エージェント
   - スムーズだった点
