@@ -5,7 +5,7 @@ INTERVAL_SECONDS=60
 waiting=false
 
 # Ctrl-C（SIGINT）で正常終了するためのトラップ
-trap 'if [ "$waiting" = true ]; then echo ""; fi; echo "Stopping watch-issue.sh..."; exit 0' INT
+trap 'if [ "$waiting" = true ]; then echo ""; fi; echo "Stopping watch-queued-issues.sh..."; exit 0' INT
 
 while true; do
   # assign-to-claudeラベル付き、かつin-progress-by-claudeラベルが付いていないissueを1件取得（古い順）
