@@ -49,35 +49,31 @@ func ParseReport(content string) (*entity.Report, error) {
 		return nil, fmt.Errorf("empty content")
 	}
 
-	sections := make(map[string]string, len(sectionHeaders))
-
+	// 全セクションの開始位置を事前計算
+	indices := make([]int, len(sectionHeaders))
 	for i, header := range sectionHeaders {
 		idx := strings.Index(content, header)
 		if idx == -1 {
 			return nil, fmt.Errorf("missing section: %s", header)
 		}
+		indices[i] = idx + len(header)
+	}
 
-		start := idx + len(header)
-		var end int
-		if i+1 < len(sectionHeaders) {
-			nextIdx := strings.Index(content, sectionHeaders[i+1])
-			if nextIdx == -1 {
-				end = len(content)
-			} else {
-				end = nextIdx
-			}
-		} else {
-			end = len(content)
+	// 各セクションの本文を抽出
+	bodies := make([]string, len(sectionHeaders))
+	for i := range sectionHeaders {
+		start := indices[i]
+		end := len(content)
+		if i+1 < len(indices) {
+			end = indices[i+1] - len(sectionHeaders[i+1])
 		}
-
-		body := strings.TrimSpace(content[start:end])
-		sections[header] = body
+		bodies[i] = strings.TrimSpace(content[start:end])
 	}
 
 	return &entity.Report{
-		Overview:        sections["## Overview"],
-		ProcessInsights: sections["## Process Insights"],
-		PotentialRisks:  sections["## Potential Risks"],
-		ManagersHint:    sections["## Manager's Hint"],
+		Overview:        bodies[0],
+		ProcessInsights: bodies[1],
+		PotentialRisks:  bodies[2],
+		ManagersHint:    bodies[3],
 	}, nil
 }
