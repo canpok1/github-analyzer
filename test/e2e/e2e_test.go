@@ -29,17 +29,6 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// DONE: 正常系: --help の出力にコマンド名と主要フラグが含まれる
-// DONE: 正常系: --version の出力にバージョン情報が含まれる
-// DONE: 異常系: フラグ未指定時にエラーメッセージを出力する
-// DONE: 異常系: --today と --since の同時指定でエラーを出力する
-// DONE: 異常系: --pr と --issue の同時指定でエラーを出力する
-// DONE: 異常系: --since に不正な値を指定した場合にエラーを出力する
-// DONE: 異常系: GH_TOKEN/GITHUB_TOKEN 未設定時にエラーメッセージを出力する
-// DONE: 異常系: GEMINI_API_KEY 未設定時にエラーメッセージを出力する
-// DONE: 正常系: --output でファイル出力先を指定できる（バリデーション通過確認）
-// DONE: 異常系: 未知のフラグを指定した場合にエラーを出力する
-
 func TestCLIHelp(t *testing.T) {
 	cmd := exec.Command(binaryPath, "--help")
 	out, err := cmd.CombinedOutput()
