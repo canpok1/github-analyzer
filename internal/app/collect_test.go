@@ -12,15 +12,17 @@ import (
 
 // テストリスト: データ収集オーケストレーション
 //
-// TODO: 単一PR指定 -- PRのデータとコメント・タイムラインを取得すること
-// TODO: 単一Issue指定 -- Issueのデータとコメント・タイムラインを取得すること
-// TODO: 期間指定(since) -- 期間内の全PR/Issueとコメント・タイムラインを取得すること
+// DONE: CollectData関数が存在し、CollectedDataを返すこと
+// DONE: 単一PR指定 -- PRのデータとコメント・タイムラインを取得すること
+// DONE: 単一Issue指定 -- Issueのデータとコメント・タイムラインを取得すること
+// DONE: 期間指定(since) -- 期間内の全PR/Issueとコメント・タイムラインを取得すること
 // DONE: 期間指定(today) -- sinceと同じロジックパス（cmd層でSinceにセットされる）
-// TODO: PR取得エラー時にエラーを返すこと
-// TODO: Issue取得エラー時にエラーを返すこと
-// TODO: コメント取得エラー時にエラーを返すこと
-// TODO: タイムライン取得エラー時にエラーを返すこと
-// TODO: 対象指定なしの場合エラーを返すこと
+// DONE: PR取得エラー時にエラーを返すこと
+// DONE: Issue取得エラー時にエラーを返すこと
+// DONE: コメント取得エラー時にエラーを返すこと
+// DONE: タイムライン取得エラー時にエラーを返すこと
+// DONE: 対象指定なしの場合エラーを返すこと
+// DONE: 不正なrepo形式の場合エラーを返すこと
 
 // mockGitHubRepository はテスト用のモック実装。
 type mockGitHubRepository struct {
@@ -369,5 +371,19 @@ func TestCollectData_TimelineError(t *testing.T) {
 	_, err := CollectData(context.Background(), mock, query)
 	if err == nil {
 		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestCollectData_InvalidRepoFormat(t *testing.T) {
+	mock := &mockGitHubRepository{}
+	pr := 1
+	query := entity.Query{
+		PR:   &pr,
+		Repo: "invalid-repo",
+	}
+
+	_, err := CollectData(context.Background(), mock, query)
+	if err == nil {
+		t.Fatal("expected error for invalid repo format, got nil")
 	}
 }
