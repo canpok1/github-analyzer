@@ -1,6 +1,10 @@
 package gemini
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/canpok1/github-analyzer/internal/domain"
@@ -41,4 +45,60 @@ func TestNewClient_ImplementsAnalyzer(t *testing.T) {
 		t.Fatalf("NewClient returned unexpected error: %v", err)
 	}
 	var _ domain.Analyzer = c
+}
+
+func TestNewClient_DefaultModel(t *testing.T) {
+	c, err := NewClient("test-api-key")
+	if err != nil {
+		t.Fatalf("NewClient returned unexpected error: %v", err)
+	}
+	if c.model != DefaultModel {
+		t.Errorf("model = %q, want %q", c.model, DefaultModel)
+	}
+}
+
+// newTestClient はテスト用のクライアントを生成するヘルパー。
+func newTestClient(t *testing.T, server *httptest.Server) *Client {
+	t.Helper()
+	c, err := NewClient("test-api-key")
+	if err != nil {
+		t.Fatalf("NewClient returned unexpected error: %v", err)
+	}
+	c.baseURL = server.URL
+	c.httpClient = server.Client()
+	return c
+}
+
+func TestAnalyze_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{
+			"candidates": [
+				{
+					"content": {
+						"parts": [
+							{"text": "Analysis result here"}
+						]
+					}
+				}
+			]
+		}`)
+	}))
+	defer server.Close()
+
+	c := newTestClient(t, server)
+	resp, err := c.Analyze(context.Background(), domain.AnalysisRequest{
+		Prompt: "analyze this",
+		Data:   "some data",
+	})
+
+	if err != nil {
+		t.Fatalf("Analyze returned unexpected error: %v", err)
+	}
+	if resp == nil {
+		t.Fatal("Analyze returned nil response")
+	}
+	if resp.Content != "Analysis result here" {
+		t.Errorf("Content = %q, want %q", resp.Content, "Analysis result here")
+	}
 }

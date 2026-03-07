@@ -1,8 +1,11 @@
 package gemini
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/canpok1/github-analyzer/internal/domain"
@@ -37,6 +40,71 @@ func NewClient(apiKey string) (*Client, error) {
 }
 
 // Analyze はプロンプトとデータを元にGemini APIで分析を実行する。
-func (c *Client) Analyze(_ context.Context, _ domain.AnalysisRequest) (*domain.AnalysisResponse, error) {
-	return nil, fmt.Errorf("not implemented")
+func (c *Client) Analyze(ctx context.Context, req domain.AnalysisRequest) (*domain.AnalysisResponse, error) {
+	model := c.model
+	if req.Model != "" {
+		model = req.Model
+	}
+
+	promptText := req.Prompt
+	if req.Data != "" {
+		promptText = req.Prompt + "\n\n" + req.Data
+	}
+
+	geminiReq := geminiRequest{
+		Contents: []content{
+			{
+				Parts: []part{
+					{Text: promptText},
+				},
+			},
+		},
+	}
+
+	body, err := json.Marshal(geminiReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/models/%s:generateContent?key=%s", c.baseURL, model, c.apiKey)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	httpResp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer func() { _ = httpResp.Body.Close() }()
+
+	respBody, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if httpResp.StatusCode != http.StatusOK {
+		var errResp geminiErrorResponse
+		if jsonErr := json.Unmarshal(respBody, &errResp); jsonErr == nil && errResp.Error.Message != "" {
+			if httpResp.StatusCode == http.StatusTooManyRequests {
+				return nil, fmt.Errorf("rate limit exceeded: %s", errResp.Error.Message)
+			}
+			return nil, fmt.Errorf("API error (status %d): %s", httpResp.StatusCode, errResp.Error.Message)
+		}
+		return nil, fmt.Errorf("API error (status %d): %s", httpResp.StatusCode, string(respBody))
+	}
+
+	var geminiResp geminiResponse
+	if err := json.Unmarshal(respBody, &geminiResp); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
+		return nil, fmt.Errorf("empty response from Gemini API")
+	}
+
+	return &domain.AnalysisResponse{
+		Content: geminiResp.Candidates[0].Content.Parts[0].Text,
+	}, nil
 }
