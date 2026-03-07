@@ -31,19 +31,17 @@ func (c *Client) ListPullRequests(ctx context.Context, owner, repo string, opts 
 		}
 
 		for _, pr := range prs {
-			converted := convertPullRequest(pr)
-
-			// Sinceフィルタ: UpdatedAtがSince以前のPRは除外
-			if opts.Since != nil && converted.UpdatedAt.Before(*opts.Since) {
-				continue
+			// Sinceフィルタ: updatedで降順ソート済みのため、Since以前なら以降も全て古い
+			if opts.Since != nil && pr.GetUpdatedAt().Time.Before(*opts.Since) {
+				return allPRs, nil
 			}
 
 			// mergedフィルタ: MergedAtがnilのPR(クローズされたがマージされていない)は除外
-			if opts.Status == "merged" && pr.MergedAt == nil {
+			if opts.Status == entity.PRStateMerged && pr.MergedAt == nil {
 				continue
 			}
 
-			allPRs = append(allPRs, converted)
+			allPRs = append(allPRs, convertPullRequest(pr))
 		}
 
 		if resp.NextPage == 0 {
@@ -56,13 +54,13 @@ func (c *Client) ListPullRequests(ctx context.Context, owner, repo string, opts 
 }
 
 // resolveAPIState はStatusフィルタをGitHub API用のstate値に変換する。
-func resolveAPIState(status string) string {
+func resolveAPIState(status entity.PRState) string {
 	switch status {
-	case "open":
+	case entity.PRStateOpen:
 		return "open"
-	case "closed":
+	case entity.PRStateClosed:
 		return "closed"
-	case "merged":
+	case entity.PRStateMerged:
 		// GitHub APIにはmerged stateがないため、closedで取得してフィルタする
 		return "closed"
 	default:

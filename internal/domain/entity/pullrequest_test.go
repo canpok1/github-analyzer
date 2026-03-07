@@ -5,10 +5,6 @@ import (
 	"time"
 )
 
-// TODO: 正常系: PullRequestの全フィールドが正しく設定される
-// TODO: 正常系: PRStatusの文字列値が正しい
-// TODO: 境界値: MergedAtがnilの場合（未マージPR）
-
 func TestPullRequest_HasExpectedFields(t *testing.T) {
 	now := time.Now()
 	mergedAt := now.Add(-1 * time.Hour)

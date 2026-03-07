@@ -4,12 +4,6 @@ import (
 	"testing"
 )
 
-// TODO: 正常系: HTTPS形式のリモートURLからowner/repoを抽出
-// TODO: 正常系: SSH形式のリモートURLからowner/repoを抽出
-// TODO: 正常系: .git拡張子付きURLからowner/repoを抽出
-// TODO: 異常系: 不正なURL形式でエラー
-// TODO: 正常系: DetectRepoが実際のgitリポジトリで動作する
-
 func TestParseRemoteURL_HTTPS(t *testing.T) {
 	owner, repo, err := ParseRemoteURL("https://github.com/owner/repo-name.git")
 	if err != nil {

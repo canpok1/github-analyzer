@@ -12,11 +12,9 @@ type Client struct {
 // NewClient は新しいGitHub APIクライアントを生成する。
 // tokenが空の場合は認証なしのクライアントを返す。
 func NewClient(token string) *Client {
-	var client *gh.Client
+	client := gh.NewClient(nil)
 	if token != "" {
-		client = gh.NewClient(nil).WithAuthToken(token)
-	} else {
-		client = gh.NewClient(nil)
+		client = client.WithAuthToken(token)
 	}
 	return &Client{client: client}
 }

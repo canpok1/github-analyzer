@@ -10,7 +10,7 @@ import (
 // ListPullRequestsOptions はPR一覧取得のオプション。
 type ListPullRequestsOptions struct {
 	Since  *time.Time
-	Status string // "open", "closed", "merged", "" (all)
+	Status entity.PRState
 }
 
 // GitHubRepository はGitHub APIへのアクセスを抽象化するインターフェース。

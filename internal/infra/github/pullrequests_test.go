@@ -9,15 +9,9 @@ import (
 	"time"
 
 	"github.com/canpok1/github-analyzer/internal/domain"
+	"github.com/canpok1/github-analyzer/internal/domain/entity"
 	gh "github.com/google/go-github/v68/github"
 )
-
-// TODO: 正常系: PR一覧を取得できる
-// TODO: 正常系: Sinceフィルタが適用される
-// TODO: 正常系: Statusフィルタ (open) が適用される
-// TODO: 正常系: Statusフィルタ (merged) が適用される - closedで取得しmergedAtでフィルタ
-// TODO: 正常系: 空のPR一覧を取得
-// TODO: 異常系: APIエラー時にエラーを返す
 
 func setupTestServer(t *testing.T, handler http.HandlerFunc) (*Client, *httptest.Server) {
 	t.Helper()
@@ -95,7 +89,7 @@ func TestListPullRequests_StatusOpen(t *testing.T) {
 	defer server.Close()
 
 	_, err := c.ListPullRequests(context.Background(), "owner", "repo", domain.ListPullRequestsOptions{
-		Status: "open",
+		Status: entity.PRStateOpen,
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -142,7 +136,7 @@ func TestListPullRequests_StatusMerged(t *testing.T) {
 	defer server.Close()
 
 	results, err := c.ListPullRequests(context.Background(), "owner", "repo", domain.ListPullRequestsOptions{
-		Status: "merged",
+		Status: entity.PRStateMerged,
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
