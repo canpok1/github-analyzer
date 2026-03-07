@@ -15,6 +15,7 @@ func defineFlags(cmd *cobra.Command) {
 	cmd.Flags().String("status", "", "ステータスでフィルタ（open / merged / closed）")
 	cmd.Flags().String("prompt", "", "分析の切り口を自由記述")
 	cmd.Flags().String("repo", "", "分析対象リポジトリ（owner/name）")
+	cmd.Flags().StringP("output", "o", "", "レポート出力先ファイルパス（未指定時は標準出力）")
 }
 
 func validateFlags(cmd *cobra.Command) error {
