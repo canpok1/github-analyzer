@@ -12,8 +12,11 @@ done
 
 echo "Issue自動選定を開始します"
 
+# リモートURLからowner/repoを取得
+source "$(dirname "$0")/lib/detect-repo.sh"
+
 # readyラベル付きのIssue数を確認し、0件ならスキップ
-READY_COUNT=$(gh issue list --state open --label "ready" --json number --jq 'length')
+READY_COUNT=$(gh issue list --repo "$REPO" --state open --label "ready" --json number --jq 'length')
 if [ "$READY_COUNT" -eq 0 ]; then
   echo "readyラベル付きのIssueがないため、スキップします"
   exit 0

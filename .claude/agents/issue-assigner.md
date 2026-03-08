@@ -12,7 +12,7 @@ model: sonnet
 ## ワークフロー
 
 1. **Issue一覧の取得**
-   - `gh issue list --state open --label "ready" --json number,title,labels,body,createdAt --limit 100` で `ready` ラベル付きのopen状態のIssue一覧を取得
+   - `gh issue list --repo {owner}/{repo} --state open --label "ready" --json number,title,labels,body,createdAt --limit 100` で `ready` ラベル付きのopen状態のIssue一覧を取得
    - 既に `assign-to-claude` または `in-progress-by-claude` ラベルが付いているIssueは除外
 
 2. **優先度判定**
@@ -21,7 +21,7 @@ model: sonnet
 
 3. **ラベル付与**
    - 優先度が高い上位2件に `assign-to-claude` ラベルを付与
-   - `gh issue edit {number} --add-label "assign-to-claude"` で付与
+   - `gh issue edit --repo {owner}/{repo} {number} --add-label "assign-to-claude"` で付与
    - 対象が1件以下の場合は存在する分だけ付与（0件なら何もしない）
 
 4. **結果報告**

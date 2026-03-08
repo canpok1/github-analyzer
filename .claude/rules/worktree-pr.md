@@ -11,7 +11,7 @@
 PR作成前に、以下のコマンドで同一Issueに対する既存PRを確認すること:
 
 ```bash
-gh pr list --search "issue-{番号}" --state all
+gh pr list --repo {owner}/{repo} --search "issue-{番号}" --state all
 ```
 
 以下のいずれかに該当する場合、**新しいPRを作成してはならない**:

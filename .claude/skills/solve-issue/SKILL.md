@@ -16,15 +16,15 @@ GitHub Issue $ARGUMENTS を対応します。
   - `golangci-lint run` → 指摘があれば修正
   - 修正した場合はコミットする
 5. 同一Issueに対する既存PRの重複チェックを行う
-  - コマンド: `gh pr list --search "issue-{番号}" --state all`
+  - コマンド: `gh pr list --repo {owner}/{repo} --search "issue-{番号}" --state all`
   - open または merged のPRが既に存在する場合は、新しいPRを作成せずユーザーに報告して指示を仰ぐ
 6. `commit-push-pr` スキルでPRを作成する
 7. CIの終了を待機する
-  - コマンド: `gh pr checks {PR番号} --watch`
+  - コマンド: `gh pr checks --repo {owner}/{repo} {PR番号} --watch`
 8. AIレビュワーのrate limitチェックを行う
   - PRのコメントおよびレビュー本文を確認し、AIレビューの有無と `rate limit` 通知をチェックする
-    - コメント: `gh pr view {PR番号} --json comments --jq '.comments[] | select(.author.login=="coderabbitai") | {body: .body, createdAt: .createdAt}'`
-    - レビュー本文: `gh pr view {PR番号} --json reviews --jq '.reviews[] | select(.author.login=="coderabbitai") | {body: .body, submittedAt: .submittedAt}'`
+    - コメント: `gh pr view --repo {owner}/{repo} {PR番号} --json comments --jq '.comments[] | select(.author.login=="coderabbitai") | {body: .body, createdAt: .createdAt}'`
+    - レビュー本文: `gh pr view --repo {owner}/{repo} {PR番号} --json reviews --jq '.reviews[] | select(.author.login=="coderabbitai") | {body: .body, submittedAt: .submittedAt}'`
     - AIレビューの判定基準: 投稿者が `coderabbitai` であるコメント・レビューをAIレビューとしてカウントする
     - 以前の `rate limit` コメントが残っていても、その後に正常なAIレビュー完了が確認できる場合は未検出として扱う（rate limitコメントの `createdAt` より新しいAIレビューが存在するかで判断する）
   - AIレビューのコメント・レビューが**1件も存在しない**場合:
