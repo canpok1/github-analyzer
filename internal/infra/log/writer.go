@@ -25,9 +25,9 @@ func NewFileWriter(path string) (*FileWriter, error) {
 }
 
 func (w *FileWriter) Write(message string) error {
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	_, err := fmt.Fprintf(w.file, "[%s] %s\n", timestamp, message)
 	return err
 }

@@ -68,9 +68,7 @@ func TestFileWriter_WriteConcurrent(t *testing.T) {
 
 func TestNewWarnOnErrorFunc_WarnsOnFirstError(t *testing.T) {
 	var writeErr error
-	callCount := 0
 	mockWriter := func(msg string) error {
-		callCount++
 		return writeErr
 	}
 
