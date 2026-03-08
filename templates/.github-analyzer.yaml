@@ -1,0 +1,14 @@
+# github-analyzer 設定ファイル
+# 各項目のコメントを解除して値を設定してください。
+
+# 分析対象のGitHubリポジトリ（owner/repo 形式）
+# repo: owner/repo
+
+# 分析レポートのトーン（例: friendly, formal, casual）
+# tone: friendly
+
+# デフォルトの分析プロンプト
+# default_prompt: チームの活動を分析してください
+
+# 使用するGeminiモデル（例: gemini-2.0-flash）
+# model: gemini-2.0-flash
