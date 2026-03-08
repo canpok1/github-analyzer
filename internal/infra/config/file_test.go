@@ -131,6 +131,7 @@ func TestLoad_UsesHomeDir(t *testing.T) {
 	// HOMEを一時ディレクトリに差し替えてテスト
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
+	t.Chdir(t.TempDir()) // カレントには設定ファイルなし
 
 	configPath := filepath.Join(dir, ".github-analyzer.yaml")
 	content := `repo: test/repo
@@ -230,6 +231,7 @@ func TestLoadFromPath_PartialMock(t *testing.T) {
 func TestLoad_NoConfigFile(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
+	t.Chdir(t.TempDir())
 
 	cfg, err := Load()
 	if err != nil {
@@ -238,5 +240,135 @@ func TestLoad_NoConfigFile(t *testing.T) {
 
 	if cfg.Repo != "" {
 		t.Errorf("Repo = %q, want empty", cfg.Repo)
+	}
+}
+
+func TestLoad_CurrentDirOnly(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	cwdDir := t.TempDir()
+	t.Chdir(cwdDir)
+
+	content := `repo: current/repo
+tone: casual
+`
+	if err := os.WriteFile(filepath.Join(cwdDir, ".github-analyzer.yaml"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.Repo != "current/repo" {
+		t.Errorf("Repo = %q, want %q", cfg.Repo, "current/repo")
+	}
+	if cfg.Tone != "casual" {
+		t.Errorf("Tone = %q, want %q", cfg.Tone, "casual")
+	}
+}
+
+func TestLoad_CurrentDirOverridesHome(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	homeContent := `repo: home/repo
+tone: friendly
+model: gemini-2.0-flash
+`
+	if err := os.WriteFile(filepath.Join(homeDir, ".github-analyzer.yaml"), []byte(homeContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cwdDir := t.TempDir()
+	t.Chdir(cwdDir)
+
+	cwdContent := `repo: current/repo
+`
+	if err := os.WriteFile(filepath.Join(cwdDir, ".github-analyzer.yaml"), []byte(cwdContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// カレントで設定されたrepoはカレントの値
+	if cfg.Repo != "current/repo" {
+		t.Errorf("Repo = %q, want %q", cfg.Repo, "current/repo")
+	}
+	// カレントで未設定のtoneはホームの値を維持
+	if cfg.Tone != "friendly" {
+		t.Errorf("Tone = %q, want %q", cfg.Tone, "friendly")
+	}
+	// カレントで未設定のmodelはホームの値を維持
+	if cfg.Model != "gemini-2.0-flash" {
+		t.Errorf("Model = %q, want %q", cfg.Model, "gemini-2.0-flash")
+	}
+}
+
+func TestLoad_NestedMockFieldMerge(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	homeContent := `mock:
+  ai: true
+  repository: true
+`
+	if err := os.WriteFile(filepath.Join(homeDir, ".github-analyzer.yaml"), []byte(homeContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cwdDir := t.TempDir()
+	t.Chdir(cwdDir)
+
+	cwdContent := `mock:
+  ai: false
+`
+	if err := os.WriteFile(filepath.Join(cwdDir, ".github-analyzer.yaml"), []byte(cwdContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// カレントで設定されたmock.aiはカレントの値(false)
+	if cfg.Mock.AI {
+		t.Error("Mock.AI should be false (overridden by current dir)")
+	}
+	// カレントで未設定のmock.repositoryはホームの値(true)を維持
+	if !cfg.Mock.Repository {
+		t.Error("Mock.Repository should be true (kept from home dir)")
+	}
+}
+
+func TestLoad_HomeDirOnly(t *testing.T) {
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+
+	homeContent := `repo: home/repo
+tone: friendly
+`
+	if err := os.WriteFile(filepath.Join(homeDir, ".github-analyzer.yaml"), []byte(homeContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Chdir(t.TempDir()) // カレントには設定ファイルなし
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.Repo != "home/repo" {
+		t.Errorf("Repo = %q, want %q", cfg.Repo, "home/repo")
+	}
+	if cfg.Tone != "friendly" {
+		t.Errorf("Tone = %q, want %q", cfg.Tone, "friendly")
 	}
 }
