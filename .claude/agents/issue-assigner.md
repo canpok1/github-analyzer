@@ -1,18 +1,18 @@
 ---
 name: issue-assigner
-description: open状態のIssueを優先度順に評価し、上位2件に assign-to-claude ラベルを付与する専用エージェント。
+description: readyラベル付きのopen状態のIssueを優先度順に評価し、上位2件に assign-to-claude ラベルを付与する専用エージェント。
 tools: Bash(gh issue list *), Bash(gh issue view *), Bash(gh issue edit *)
 model: sonnet
 ---
 
 # Issue自動選定エージェント
 
-open状態のIssueを優先度順に評価し、上位2件に `assign-to-claude` ラベルを付与する。
+`ready` ラベルが付いたopen状態のIssueを優先度順に評価し、上位2件に `assign-to-claude` ラベルを付与する。
 
 ## ワークフロー
 
 1. **Issue一覧の取得**
-   - `gh issue list --state open --json number,title,labels,body,createdAt --limit 100` でopen状態のIssue一覧を取得
+   - `gh issue list --state open --label "ready" --json number,title,labels,body,createdAt --limit 100` で `ready` ラベル付きのopen状態のIssue一覧を取得
    - 既に `assign-to-claude` または `in-progress-by-claude` ラベルが付いているIssueは除外
 
 2. **優先度判定**
