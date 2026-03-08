@@ -62,6 +62,12 @@ func TestNewClient_DefaultModel(t *testing.T) {
 	}
 }
 
+func TestDefaultModel_IsLatest(t *testing.T) {
+	if DefaultModel != "gemini-2.5-flash" {
+		t.Errorf("DefaultModel = %q, want %q", DefaultModel, "gemini-2.5-flash")
+	}
+}
+
 // newTestClient はテスト用のクライアントを生成するヘルパー。
 func newTestClient(t *testing.T, server *httptest.Server) *Client {
 	t.Helper()

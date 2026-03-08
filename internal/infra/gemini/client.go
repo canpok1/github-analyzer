@@ -21,7 +21,7 @@ const (
 
 const (
 	// DefaultModel はデフォルトで使用するGeminiモデル。
-	DefaultModel = "gemini-1.5-flash"
+	DefaultModel = "gemini-2.5-flash"
 )
 
 // Client はGemini APIクライアント。
