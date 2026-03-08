@@ -6,16 +6,6 @@ import (
 	"time"
 )
 
-// DONE: 正常系: GH_TOKENが優先される
-// DONE: 正常系: GH_TOKEN未設定時にGITHUB_TOKENが使われる
-// DONE: 異常系: GH_TOKEN/GITHUB_TOKEN両方未設定の場合エラーを返す
-// DONE: 正常系: buildQueryがフラグからQueryを正しく構築する
-// DONE: 正常系: --modelフラグでQuery.Modelが設定される
-// DONE: 正常系: --todayフラグでSinceが当日0時に設定される
-// DONE: 正常系: --sinceフラグでSinceが正しく計算される
-// DONE: 異常系: GEMINI_API_KEY未設定の場合エラーを返す
-// DONE: 異常系: GH_TOKEN/GITHUB_TOKEN未設定の場合エラーを返す
-
 func TestResolveToken_GHTokenPriority(t *testing.T) {
 	t.Setenv("GH_TOKEN", "gh-token-value")
 	t.Setenv("GITHUB_TOKEN", "github-token-value")
