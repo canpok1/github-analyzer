@@ -149,6 +149,84 @@ func TestLoad_UsesHomeDir(t *testing.T) {
 	}
 }
 
+func TestLoadFromPath_MockConfig(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, ".github-analyzer.yaml")
+
+	content := `mock:
+  ai: true
+  repository: true
+log_file: /tmp/test.log
+`
+	if err := os.WriteFile(configPath, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := LoadFromPath(configPath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !cfg.Mock.AI {
+		t.Error("Mock.AI should be true")
+	}
+	if !cfg.Mock.Repository {
+		t.Error("Mock.Repository should be true")
+	}
+	if cfg.LogFile != "/tmp/test.log" {
+		t.Errorf("LogFile = %q, want %q", cfg.LogFile, "/tmp/test.log")
+	}
+}
+
+func TestLoadFromPath_MockDefaults(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, ".github-analyzer.yaml")
+
+	content := `repo: owner/repo`
+	if err := os.WriteFile(configPath, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := LoadFromPath(configPath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.Mock.AI {
+		t.Error("Mock.AI should default to false")
+	}
+	if cfg.Mock.Repository {
+		t.Error("Mock.Repository should default to false")
+	}
+	if cfg.LogFile != "" {
+		t.Errorf("LogFile should default to empty, got %q", cfg.LogFile)
+	}
+}
+
+func TestLoadFromPath_PartialMock(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, ".github-analyzer.yaml")
+
+	content := `mock:
+  ai: true
+`
+	if err := os.WriteFile(configPath, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := LoadFromPath(configPath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !cfg.Mock.AI {
+		t.Error("Mock.AI should be true")
+	}
+	if cfg.Mock.Repository {
+		t.Error("Mock.Repository should be false when not specified")
+	}
+}
+
 func TestLoad_NoConfigFile(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
