@@ -6,6 +6,7 @@
 REMOTE_URL=$(git remote get-url origin)
 if [[ "$REMOTE_URL" == */git/* ]]; then
   REPO="${REMOTE_URL##*/git/}"
+  REPO="${REPO%.git}"
 else
   REPO=$(echo "$REMOTE_URL" | sed -n 's|.*github\.com[:/]\([^/]*/[^/.]*\)\(\.git\)\{0,1\}$|\1|p')
 fi
