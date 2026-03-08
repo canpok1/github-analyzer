@@ -61,7 +61,7 @@ github-analyzer --repo owner/repo --today
 | `--status` | ステータスでフィルタ（`open` / `merged` / `closed`） |
 | `--prompt` | 分析の切り口を自由記述 |
 | `--repo` | 分析対象リポジトリ（`owner/repo` 形式） |
-| `--model` | 使用するGeminiモデル（例: `gemini-2.0-flash`） |
+| `--model` | 使用するGeminiモデル（例: `gemini-2.5-flash`） |
 | `-o`, `--output` | レポート出力先ファイルパス（未指定時は標準出力） |
 
 ### バリデーションルール
@@ -102,7 +102,7 @@ github-analyzer --repo owner/repo --today -o report.md
 | `repo` | 分析対象のGitHubリポジトリ（`owner/repo` 形式） | `owner/repo` |
 | `tone` | 分析レポートのトーン | `friendly`, `formal`, `casual` |
 | `default_prompt` | デフォルトの分析プロンプト | `チームの活動を分析してください` |
-| `model` | 使用するGeminiモデル | `gemini-2.0-flash` |
+| `model` | 使用するGeminiモデル | `gemini-2.5-flash` |
 | `mock.ai` | Gemini APIをモック化 | `true` / `false` |
 | `mock.repository` | GitHub APIをモック化 | `true` / `false` |
 | `log_file` | ログ出力先ファイルパス | `/path/to/github-analyzer.log` |
@@ -113,7 +113,7 @@ github-analyzer --repo owner/repo --today -o report.md
 repo: owner/repo
 tone: friendly
 default_prompt: チームの活動を分析してください
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 log_file: /tmp/github-analyzer.log
 ```
 
