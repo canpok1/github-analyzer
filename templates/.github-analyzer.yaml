@@ -12,3 +12,13 @@
 
 # 使用するGeminiモデル（例: gemini-2.0-flash）
 # model: gemini-2.0-flash
+
+# モック設定
+# 実際のAPIにアクセスせずにCLIの動作確認ができます
+# mock:
+#   ai: true           # AI API（Gemini）をモック化（デフォルト: false）
+#   repository: true   # リポジトリAPI（GitHub）をモック化（デフォルト: false）
+
+# ログ設定
+# AI APIに送信されるプロンプト等をログファイルに出力します
+# log_file: /path/to/github-analyzer.log

@@ -205,6 +205,49 @@ func TestAnalyze_WriterError(t *testing.T) {
 	}
 }
 
+func TestAnalyze_LoggerReceivesPromptAndData(t *testing.T) {
+	deps, _ := newSuccessDeps()
+	var logged []string
+	deps.Logger = func(msg string) {
+		logged = append(logged, msg)
+	}
+	deps.PromptBuilder = func(_ *CollectedData, _ string) domain.AnalysisRequest {
+		return domain.AnalysisRequest{Prompt: "test-prompt", Data: "test-data"}
+	}
+	query := entity.Query{
+		Repo: "owner/repo",
+		PR:   intPtr(1),
+	}
+
+	err := Analyze(context.Background(), deps, query)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(logged) < 2 {
+		t.Fatalf("expected at least 2 log entries, got %d", len(logged))
+	}
+	if !strings.Contains(logged[0], "test-prompt") {
+		t.Errorf("first log should contain prompt, got %q", logged[0])
+	}
+	if !strings.Contains(logged[1], "test-data") {
+		t.Errorf("second log should contain data, got %q", logged[1])
+	}
+}
+
+func TestAnalyze_NilLoggerDoesNotPanic(t *testing.T) {
+	deps, _ := newSuccessDeps()
+	deps.Logger = nil
+	query := entity.Query{
+		Repo: "owner/repo",
+		PR:   intPtr(1),
+	}
+
+	err := Analyze(context.Background(), deps, query)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func intPtr(v int) *int {
 	return &v
 }

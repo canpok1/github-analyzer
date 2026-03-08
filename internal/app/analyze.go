@@ -15,6 +15,9 @@ type PromptBuilderFunc func(data *CollectedData, userPrompt string) domain.Analy
 // ReportParserFunc はAI分析結果のテキストをReportエンティティにパースする関数型。
 type ReportParserFunc func(content string) (*entity.Report, error)
 
+// LogFunc はログメッセージを書き込む関数型。nilの場合はログ出力しない。
+type LogFunc func(message string)
+
 // AnalyzeDeps はAnalyze関数の依存をまとめた構造体。
 type AnalyzeDeps struct {
 	GitHubRepo    domain.GitHubRepository
@@ -24,6 +27,7 @@ type AnalyzeDeps struct {
 	Renderer      domain.ReportRenderer
 	Writer        domain.ReportWriter
 	Stderr        io.Writer
+	Logger        LogFunc
 }
 
 // printProgress はstderrに進捗メッセージを出力する。
@@ -43,6 +47,12 @@ func Analyze(ctx context.Context, deps AnalyzeDeps, query entity.Query) error {
 	printProgress(deps.Stderr, "AI分析を実行中...")
 
 	req := deps.PromptBuilder(data, query.Prompt)
+
+	if deps.Logger != nil {
+		deps.Logger(fmt.Sprintf("=== Prompt ===\n%s", req.Prompt))
+		deps.Logger(fmt.Sprintf("=== Data ===\n%s", req.Data))
+	}
+
 	resp, err := deps.Analyzer.Analyze(ctx, req)
 	if err != nil {
 		return fmt.Errorf("AI分析に失敗しました: %w", err)
