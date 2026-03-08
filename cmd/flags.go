@@ -16,6 +16,7 @@ func defineFlags(cmd *cobra.Command) {
 	cmd.Flags().String("prompt", "", "分析の切り口を自由記述")
 	cmd.Flags().String("repo", "", "分析対象リポジトリ（owner/name）")
 	cmd.Flags().StringP("output", "o", "", "レポート出力先ファイルパス（未指定時は標準出力）")
+	cmd.Flags().String("model", "", "使用するGeminiモデル（例: gemini-2.5-flash）")
 }
 
 func noFlagsSpecified(cmd *cobra.Command) bool {

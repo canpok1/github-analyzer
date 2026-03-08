@@ -30,6 +30,9 @@ func buildQuery(cmd *cobra.Command) entity.Query {
 	prompt, _ := cmd.Flags().GetString("prompt")
 	query.Prompt = prompt
 
+	model, _ := cmd.Flags().GetString("model")
+	query.Model = model
+
 	status, _ := cmd.Flags().GetString("status")
 	query.Status = status
 

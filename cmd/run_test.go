@@ -10,6 +10,7 @@ import (
 // DONE: 正常系: GH_TOKEN未設定時にGITHUB_TOKENが使われる
 // DONE: 異常系: GH_TOKEN/GITHUB_TOKEN両方未設定の場合エラーを返す
 // DONE: 正常系: buildQueryがフラグからQueryを正しく構築する
+// DONE: 正常系: --modelフラグでQuery.Modelが設定される
 // DONE: 正常系: --todayフラグでSinceが当日0時に設定される
 // DONE: 正常系: --sinceフラグでSinceが正しく計算される
 // DONE: 異常系: GEMINI_API_KEY未設定の場合エラーを返す
@@ -148,6 +149,18 @@ func TestRunAnalyze_MissingGHToken(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "GH_TOKEN") {
 		t.Errorf("error should mention GH_TOKEN: %v", err)
+	}
+}
+
+func TestBuildQuery_WithModel(t *testing.T) {
+	cmd := makeRootCmd()
+	if err := cmd.ParseFlags([]string{"--pr", "1", "--repo", "o/r", "--model", "gemini-2.5-flash"}); err != nil {
+		t.Fatalf("failed to parse flags: %v", err)
+	}
+
+	query := buildQuery(cmd)
+	if query.Model != "gemini-2.5-flash" {
+		t.Errorf("expected Model='gemini-2.5-flash', got %q", query.Model)
 	}
 }
 
