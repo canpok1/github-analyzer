@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"sync"
 	"time"
@@ -33,4 +34,17 @@ func (w *FileWriter) Write(message string) error {
 
 func (w *FileWriter) Close() error {
 	return w.file.Close()
+}
+
+// NewWarnOnErrorFunc はログ書き込み関数をラップし、
+// 初回エラー時にstderrへ警告を出力するLogFuncを返す。
+func NewWarnOnErrorFunc(write func(string) error, stderr io.Writer) func(string) {
+	var once sync.Once
+	return func(msg string) {
+		if err := write(msg); err != nil {
+			once.Do(func() {
+				_, _ = fmt.Fprintf(stderr, "警告: ログ書き込みに失敗しました: %v\n", err)
+			})
+		}
+	}
 }

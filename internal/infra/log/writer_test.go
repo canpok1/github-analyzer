@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,6 +63,38 @@ func TestFileWriter_WriteConcurrent(t *testing.T) {
 	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
 	if len(lines) != goroutines {
 		t.Errorf("expected %d lines, got %d", goroutines, len(lines))
+	}
+}
+
+func TestNewWarnOnErrorFunc_WarnsOnFirstError(t *testing.T) {
+	var writeErr error
+	callCount := 0
+	mockWriter := func(msg string) error {
+		callCount++
+		return writeErr
+	}
+
+	var stderrBuf strings.Builder
+	logFunc := NewWarnOnErrorFunc(mockWriter, &stderrBuf)
+
+	// 正常系: エラーなし、警告なし
+	logFunc("ok message")
+	if stderrBuf.Len() != 0 {
+		t.Errorf("expected no warning, got %q", stderrBuf.String())
+	}
+
+	// 異常系: エラー発生、初回のみ警告
+	writeErr = fmt.Errorf("disk full")
+	logFunc("fail message")
+	if !strings.Contains(stderrBuf.String(), "disk full") {
+		t.Errorf("expected warning containing error, got %q", stderrBuf.String())
+	}
+
+	// 2回目のエラー: 追加の警告なし
+	prevLen := stderrBuf.Len()
+	logFunc("fail again")
+	if stderrBuf.Len() != prevLen {
+		t.Errorf("expected no additional warning on second error")
 	}
 }
 
