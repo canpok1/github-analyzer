@@ -1,7 +1,7 @@
 ---
 name: doc-validator
 description: ドキュメント（README.md、docs/配下）の内容が実装と乖離していないかを検証するエージェント。
-tools: Read, Glob, Grep, Bash(ls *), Bash(make *)
+tools: Read, Glob, Grep, Bash(ls *), Bash(make *), Bash(git *)
 model: sonnet
 ---
 
