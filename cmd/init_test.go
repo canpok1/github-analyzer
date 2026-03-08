@@ -13,9 +13,7 @@ import (
 
 func TestInitCmd_CreatesTemplateFile(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	defer os.Chdir(origDir)
-	os.Chdir(dir)
+	t.Chdir(dir)
 
 	cmd := makeRootCmd()
 	cmd.SetArgs([]string{"init"})
@@ -32,9 +30,7 @@ func TestInitCmd_CreatesTemplateFile(t *testing.T) {
 
 func TestInitCmd_FileAlreadyExists(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	defer os.Chdir(origDir)
-	os.Chdir(dir)
+	t.Chdir(dir)
 
 	configPath := filepath.Join(dir, ".github-analyzer.yaml")
 	originalContent := "original content"
@@ -57,9 +53,7 @@ func TestInitCmd_FileAlreadyExists(t *testing.T) {
 
 func TestInitCmd_TemplateContainsFieldComments(t *testing.T) {
 	dir := t.TempDir()
-	origDir, _ := os.Getwd()
-	defer os.Chdir(origDir)
-	os.Chdir(dir)
+	t.Chdir(dir)
 
 	cmd := makeRootCmd()
 	cmd.SetArgs([]string{"init"})
