@@ -33,6 +33,8 @@ func (w *FileWriter) Write(message string) error {
 }
 
 func (w *FileWriter) Close() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	return w.file.Close()
 }
 
