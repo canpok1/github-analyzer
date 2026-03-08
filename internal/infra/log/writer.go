@@ -3,11 +3,14 @@ package log
 import (
 	"fmt"
 	"os"
+	"sync"
 	"time"
 )
 
 // FileWriter はファイルにログを書き込む実装。
+// 複数のgoroutineから安全に使用できる。
 type FileWriter struct {
+	mu   sync.Mutex
 	file *os.File
 }
 
@@ -21,6 +24,8 @@ func NewFileWriter(path string) (*FileWriter, error) {
 }
 
 func (w *FileWriter) Write(message string) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	_, err := fmt.Fprintf(w.file, "[%s] %s\n", timestamp, message)
 	return err
