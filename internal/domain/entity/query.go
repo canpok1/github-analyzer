@@ -15,6 +15,7 @@ type Query struct {
 	Status string
 	Prompt string
 	Repo   string
+	Model  string
 }
 
 // ParseDuration は "7d", "2w" のような期間文字列をtime.Durationに変換する。
