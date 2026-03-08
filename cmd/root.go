@@ -23,6 +23,9 @@ func makeRootCmd() *cobra.Command {
 	cmd.SilenceUsage = true
 	defineFlags(cmd)
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if noFlagsSpecified(cmd) {
+			return cmd.Help()
+		}
 		if err := validateFlags(cmd); err != nil {
 			return err
 		}

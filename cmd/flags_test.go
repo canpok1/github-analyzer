@@ -23,12 +23,12 @@ func TestValidation_PRAndIssueConflict(t *testing.T) {
 	}
 }
 
-func TestValidation_NoTargetSpecified(t *testing.T) {
+func TestValidation_NoTargetSpecified_NoError(t *testing.T) {
 	cmd := makeRootCmd()
 	_ = cmd.ParseFlags([]string{})
 	err := validateFlags(cmd)
-	if err == nil {
-		t.Error("expected error when no target is specified")
+	if err != nil {
+		t.Errorf("no target specified should not return error from validateFlags, got: %v", err)
 	}
 }
 
