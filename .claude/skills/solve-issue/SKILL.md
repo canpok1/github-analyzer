@@ -22,10 +22,14 @@ GitHub Issue $ARGUMENTS を対応します。
 7. CIの終了を待機する
   - コマンド: `gh pr checks {PR番号} --watch`
 8. AIレビュワーのrate limitチェックを行う
-  - PRのコメントおよびレビュー本文を確認し、現在も有効な `rate limit` 通知があるかチェックする
-    - コメント: `gh pr view {PR番号} --json comments --jq '.comments[].body'`
-    - レビュー本文: `gh pr view {PR番号} --json reviews --jq '.reviews[].body'`
-    - 以前の `rate limit` コメントが残っていても、その後に正常なAIレビュー完了が確認できる場合は未検出として扱う（投稿時刻で判断する）
+  - PRのコメントおよびレビュー本文を確認し、AIレビューの有無と `rate limit` 通知をチェックする
+    - コメント: `gh pr view {PR番号} --json comments --jq '.comments[] | select(.author.login=="coderabbitai") | {body: .body, createdAt: .createdAt}'`
+    - レビュー本文: `gh pr view {PR番号} --json reviews --jq '.reviews[] | select(.author.login=="coderabbitai") | {body: .body, submittedAt: .submittedAt}'`
+    - AIレビューの判定基準: 投稿者が `coderabbitai` であるコメント・レビューをAIレビューとしてカウントする
+    - 以前の `rate limit` コメントが残っていても、その後に正常なAIレビュー完了が確認できる場合は未検出として扱う（rate limitコメントの `createdAt` より新しいAIレビューが存在するかで判断する）
+  - AIレビューのコメント・レビューが**1件も存在しない**場合:
+    1. 60秒待機してから、上記と同じコマンドで再度コメント・レビューをチェックする
+    2. 待機後もAIレビューが0件の場合は、rate limitが原因と見なして以下のrate limit対応フローに入る
   - 現在も有効なrate limitコメントが検出された場合:
     1. コメントの内容を読み取り、待機時間や再レビュー方法を把握する
     2. 指示された待機時間だけ待機する（情報が不明な場合は10分をデフォルトとする）
