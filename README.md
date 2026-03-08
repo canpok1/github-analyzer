@@ -61,7 +61,7 @@ github-analyzer --repo owner/repo --today
 | `--status` | ステータスでフィルタ（`open` / `merged` / `closed`） |
 | `--prompt` | 分析の切り口を自由記述 |
 | `--repo` | 分析対象リポジトリ（`owner/repo` 形式） |
-| `--model` | 使用するGeminiモデル（例: `gemini-2.5-flash`） |
+| `--model` | 使用するGeminiモデル（例: `gemini-2.0-flash`） |
 | `-o`, `--output` | レポート出力先ファイルパス（未指定時は標準出力） |
 
 ### バリデーションルール
