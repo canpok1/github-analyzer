@@ -10,7 +10,7 @@ GitHub Issue $ARGUMENTS を対応します。
 
 1. Issue の内容を理解する
 2. `/tdd` スキルで実装する
-3. `/simplify` スキルで自己レビューしてコードを改善する
+3. `/review` スキルで自己レビュー（コード品質 + ドキュメント整合性チェック）を行う
 4. lint/formatチェックを実行する（PR作成前の最終ガード）
   - `gofmt -l .` → 出力があれば `gofmt -w .` で修正
   - `golangci-lint run` → 指摘があれば修正
