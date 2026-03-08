@@ -98,7 +98,7 @@ func TestValidation_SinceInvalidValue(t *testing.T) {
 func TestFlags_Defined(t *testing.T) {
 	cmd := makeRootCmd()
 
-	flags := []string{"today", "since", "pr", "issue", "status", "prompt", "repo", "output"}
+	flags := []string{"today", "since", "pr", "issue", "status", "prompt", "repo", "output", "model"}
 	for _, name := range flags {
 		t.Run(name, func(t *testing.T) {
 			f := cmd.Flags().Lookup(name)

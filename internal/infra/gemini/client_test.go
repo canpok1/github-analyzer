@@ -13,20 +13,6 @@ import (
 	"github.com/canpok1/github-analyzer/internal/domain"
 )
 
-// DONE: NewClient: APIキーが空の場合エラー
-// DONE: NewClient: 正しいAPIキーで正常にクライアント生成
-// DONE: NewClient: domain.Analyzerインターフェースの実装確認
-// DONE: NewClient: デフォルトモデル設定確認
-// DONE: Analyze: 正常系 - 成功レスポンスをパース
-// DONE: Analyze: APIエラー（400等）でエラーを返す
-// DONE: Analyze: レートリミット（429）で専用エラーを返す
-// DONE: Analyze: タイムアウトでエラーを返す
-// DONE: Analyze: レスポンスのJSONパースエラー
-// DONE: Analyze: 空コンテンツのレスポンス
-// DONE: Analyze: モデルのオーバーライド
-// DONE: Analyze: リクエストフォーマット確認
-// TODO: SetModel: モデル名を設定できる
-
 func TestNewClient_EmptyAPIKey_ReturnsError(t *testing.T) {
 	_, err := NewClient("")
 	if err == nil {

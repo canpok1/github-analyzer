@@ -6,8 +6,7 @@ import (
 
 // applyConfig は設定ファイルの値をQueryに反映する。
 // CLIフラグ（空でない値） > 設定ファイル > デフォルト値 の優先順位。
-// 戻り値はマージ後のQueryと設定ファイルで指定されたモデル名（未指定時は空文字列）。
-func applyConfig(query entity.Query, cfg entity.Config) (entity.Query, string) {
+func applyConfig(query entity.Query, cfg entity.Config) entity.Query {
 	if query.Repo == "" && cfg.Repo != "" {
 		query.Repo = cfg.Repo
 	}
@@ -16,5 +15,9 @@ func applyConfig(query entity.Query, cfg entity.Config) (entity.Query, string) {
 		query.Prompt = cfg.DefaultPrompt
 	}
 
-	return query, cfg.Model
+	if query.Model == "" && cfg.Model != "" {
+		query.Model = cfg.Model
+	}
+
+	return query
 }
