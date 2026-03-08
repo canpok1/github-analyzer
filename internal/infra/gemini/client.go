@@ -47,6 +47,14 @@ func NewClient(apiKey string) (*Client, error) {
 	}, nil
 }
 
+// SetModel はクライアントのデフォルトモデルを設定する。
+// 空文字列が渡された場合は何もしない。
+func (c *Client) SetModel(model string) {
+	if model != "" {
+		c.model = model
+	}
+}
+
 // Analyze はプロンプトとデータを元にGemini APIで分析を実行する。
 func (c *Client) Analyze(ctx context.Context, req domain.AnalysisRequest) (*domain.AnalysisResponse, error) {
 	model := c.model
