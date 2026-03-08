@@ -12,10 +12,10 @@ done
 
 echo "Issue自動選定を開始します"
 
-# open状態のIssue数を確認し、0件ならスキップ
-OPEN_COUNT=$(gh issue list --state open --json number --jq 'length')
-if [ "$OPEN_COUNT" -eq 0 ]; then
-  echo "open状態のIssueがないため、スキップします"
+# readyラベル付きのIssue数を確認し、0件ならスキップ
+READY_COUNT=$(gh issue list --state open --label "ready" --json number --jq 'length')
+if [ "$READY_COUNT" -eq 0 ]; then
+  echo "readyラベル付きのIssueがないため、スキップします"
   exit 0
 fi
 
