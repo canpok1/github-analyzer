@@ -18,6 +18,10 @@ func defineFlags(cmd *cobra.Command) {
 	cmd.Flags().StringP("output", "o", "", "レポート出力先ファイルパス（未指定時は標準出力）")
 }
 
+func noFlagsSpecified(cmd *cobra.Command) bool {
+	return cmd.Flags().NFlag() == 0
+}
+
 func validateFlags(cmd *cobra.Command) error {
 	today, _ := cmd.Flags().GetBool("today")
 	since, _ := cmd.Flags().GetString("since")
@@ -32,11 +36,6 @@ func validateFlags(cmd *cobra.Command) error {
 	// --pr と --issue の同時指定はエラー
 	if pr != 0 && issue != 0 {
 		return fmt.Errorf("--pr と --issue は同時に指定できません")
-	}
-
-	// 対象指定なしはエラー
-	if !today && since == "" && pr == 0 && issue == 0 {
-		return fmt.Errorf("--today, --since, --pr, --issue のいずれかを指定してください")
 	}
 
 	// --since の値が不正な場合エラー
