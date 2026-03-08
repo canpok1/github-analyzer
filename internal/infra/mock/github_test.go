@@ -47,6 +47,9 @@ func TestGitHubRepository_ListIssues(t *testing.T) {
 		if issue.Title == "" {
 			t.Error("Issue title should not be empty")
 		}
+		if issue.Author == "" {
+			t.Error("Issue author should not be empty")
+		}
 	}
 }
 

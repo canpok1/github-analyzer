@@ -75,8 +75,12 @@ func TestFileWriter_WriteMultiple(t *testing.T) {
 	}
 	defer w.Close()
 
-	_ = w.Write("first")
-	_ = w.Write("second")
+	if err := w.Write("first"); err != nil {
+		t.Fatalf("unexpected write error for 'first': %v", err)
+	}
+	if err := w.Write("second"); err != nil {
+		t.Fatalf("unexpected write error for 'second': %v", err)
+	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
