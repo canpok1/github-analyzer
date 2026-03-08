@@ -18,6 +18,9 @@ const dummyReport = `## Overview
 ## Manager's Hint
 モックモードでの動作確認が完了したら、実際のAPIキーを設定して本番の分析を実行してください。`
 
+// コンパイル時にインターフェース準拠を検証する。
+var _ domain.Analyzer = (*Analyzer)(nil)
+
 // Analyzer は domain.Analyzer のモック実装。
 // 固定のダミーレポートを返す。
 type Analyzer struct{}

@@ -1,9 +1,11 @@
 package log
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -31,6 +33,69 @@ func TestFileWriter_Write(t *testing.T) {
 	}
 }
 
+func TestFileWriter_WriteConcurrent(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.log")
+
+	w, err := NewFileWriter(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer w.Close()
+
+	const goroutines = 10
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for i := range goroutines {
+		go func(n int) {
+			defer wg.Done()
+			if err := w.Write(strings.Repeat("x", 100)); err != nil {
+				t.Errorf("goroutine %d: unexpected write error: %v", n, err)
+			}
+		}(i)
+	}
+	wg.Wait()
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("unexpected read error: %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if len(lines) != goroutines {
+		t.Errorf("expected %d lines, got %d", goroutines, len(lines))
+	}
+}
+
+func TestNewWarnOnErrorFunc_WarnsOnFirstError(t *testing.T) {
+	var writeErr error
+	mockWriter := func(msg string) error {
+		return writeErr
+	}
+
+	var stderrBuf strings.Builder
+	logFunc := NewWarnOnErrorFunc(mockWriter, &stderrBuf)
+
+	// 正常系: エラーなし、警告なし
+	logFunc("ok message")
+	if stderrBuf.Len() != 0 {
+		t.Errorf("expected no warning, got %q", stderrBuf.String())
+	}
+
+	// 異常系: エラー発生、初回のみ警告
+	writeErr = fmt.Errorf("disk full")
+	logFunc("fail message")
+	if !strings.Contains(stderrBuf.String(), "disk full") {
+		t.Errorf("expected warning containing error, got %q", stderrBuf.String())
+	}
+
+	// 2回目のエラー: 追加の警告なし
+	prevLen := stderrBuf.Len()
+	logFunc("fail again")
+	if stderrBuf.Len() != prevLen {
+		t.Errorf("expected no additional warning on second error")
+	}
+}
+
 func TestFileWriter_WriteMultiple(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.log")
@@ -41,8 +106,12 @@ func TestFileWriter_WriteMultiple(t *testing.T) {
 	}
 	defer w.Close()
 
-	_ = w.Write("first")
-	_ = w.Write("second")
+	if err := w.Write("first"); err != nil {
+		t.Fatalf("unexpected write error for 'first': %v", err)
+	}
+	if err := w.Write("second"); err != nil {
+		t.Fatalf("unexpected write error for 'second': %v", err)
+	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {

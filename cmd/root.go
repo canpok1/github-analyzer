@@ -90,9 +90,7 @@ func runAnalyze(cmd *cobra.Command) error {
 			return fmt.Errorf("ログファイルの作成に失敗しました: %w", err)
 		}
 		defer func() { _ = logWriter.Close() }()
-		logger = func(msg string) {
-			_ = logWriter.Write(msg)
-		}
+		logger = applog.NewWarnOnErrorFunc(logWriter.Write, os.Stderr)
 	}
 
 	outputPath, _ := cmd.Flags().GetString("output")

@@ -10,6 +10,9 @@ import (
 
 var baseTime = time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
 
+// コンパイル時にインターフェース準拠を検証する。
+var _ domain.GitHubRepository = (*GitHubRepository)(nil)
+
 // GitHubRepository は domain.GitHubRepository のモック実装。
 // 固定のダミーデータを返す。
 type GitHubRepository struct{}
