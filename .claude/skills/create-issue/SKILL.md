@@ -71,7 +71,7 @@ argument-hint: "[topic]"
 承認を得たら `gh issue create` で Issue を作成する。
 
 ```bash
-gh issue create \
+gh issue create --repo {owner}/{repo} \
   --title "タイトル" \
   --body "$(cat <<'EOF'
 ## 概要
