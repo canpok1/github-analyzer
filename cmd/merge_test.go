@@ -6,10 +6,10 @@ import (
 	"github.com/canpok1/github-analyzer/internal/domain/entity"
 )
 
-// TODO: CLIフラグのモデルが設定されている場合、設定ファイルよりCLIフラグを優先
-// TODO: CLIフラグのモデルが未設定で設定ファイルに値がある場合、設定ファイルの値を使用
-// TODO: モデルが両方未設定の場合、空文字列（デフォルト値）を使用
-// TODO: applyConfigの戻り値からmodel stringを除去しQuery.Modelに統合
+// DONE: CLIフラグのモデルが設定されている場合、設定ファイルよりCLIフラグを優先
+// DONE: CLIフラグのモデルが未設定で設定ファイルに値がある場合、設定ファイルの値を使用
+// DONE: モデルが両方未設定の場合、空文字列（デフォルト値）を使用
+// DONE: applyConfigの戻り値からmodel stringを除去しQuery.Modelに統合
 
 func TestApplyConfig_CLIFlagOverridesConfig(t *testing.T) {
 	query := entity.Query{
