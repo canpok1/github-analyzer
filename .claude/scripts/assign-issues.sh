@@ -12,6 +12,13 @@ done
 
 echo "Issue自動選定を開始します"
 
+# openのIssue数を確認し、0件ならスキップ
+OPEN_COUNT=$(gh issue list --state open --json number --jq 'length')
+if [ "$OPEN_COUNT" -eq 0 ]; then
+  echo "open状態のIssueがないため、スキップします"
+  exit 0
+fi
+
 # Claudeでissueを選定・ラベル付与（コード変更不要のため--worktreeは不使用）
 if "${USE_PRINT_MODE}"; then
   claude --dangerously-skip-permissions -p "/assign-issues"
