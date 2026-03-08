@@ -20,9 +20,11 @@ func Load() (entity.Config, error) {
 		paths = append(paths, filepath.Join(home, configFileName))
 	}
 
-	if cwd, err := os.Getwd(); err == nil {
-		paths = append(paths, filepath.Join(cwd, configFileName))
+	cwd, err := os.Getwd()
+	if err != nil {
+		return entity.Config{}, err
 	}
+	paths = append(paths, filepath.Join(cwd, configFileName))
 
 	return loadAndMerge(paths)
 }
